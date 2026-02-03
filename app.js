@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
   try { tg?.ready(); tg?.expand(); } catch {}
 
-  const STORAGE_KEY = "adigafx_journal_v20";
+  const STORAGE_KEY = "adigafx_journal_v31";
 
   const $ = (id) => document.getElementById(id);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -179,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const avg = (arr) => arr.length ? sum(arr) / arr.length : 0;
 
   function computeStreak(closedAsc) {
-    // closedAsc sorted by date ASC (oldest -> newest)
     let w = 0, l = 0;
     for (let i = closedAsc.length - 1; i >= 0; i--) {
       const t = closedAsc[i];
@@ -276,7 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setText("statTopSetup", topSetup.bestKey === "—" ? "—" : topSetup.bestKey);
     setText("statTopSetupHint", topSetup.bestKey === "—" ? "No data yet" : `PnL: ${fmtMoney(topSetup.bestVal)}`);
 
-    // Session performance (closed only)
     function sess(name) {
       const t = closed.filter(x => (x.session || "") === name);
       return { pnl: sum(t.map(x => x.pnl || 0)), n: t.length };
@@ -289,7 +287,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setText("sessNY", fmtMoney(n.pnl)); setText("sessNYMeta", `${n.n} trades`);
     setText("sessU", fmtMoney(u.pnl)); setText("sessUMeta", `${u.n} trades`);
 
-    // Recent trades
     const list = $("tradesList");
     if (list) {
       list.innerHTML = "";
@@ -329,7 +326,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Dashboard time seg + quick action buttons
   if ($("timeSeg")) {
     $$("#timeSeg .segBtn").forEach(b => b.addEventListener("click", () => {
       setSegActive("timeSeg", "time", b.dataset.time);
@@ -338,6 +334,8 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDashboard();
     }));
   }
+
+  // Quick actions
   const go = (r) => setActiveTab(r);
   $("qaNew")?.addEventListener("click", () => go("new"));
   $("qaChecklist")?.addEventListener("click", () => go("check"));
@@ -419,6 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDashboard();
     setActiveTab("dash");
   }
+
   // -------- CHECKLIST --------
   function renderChecklist() {
     if ($("cDate") && !$("cDate").value) $("cDate").value = new Date().toISOString().slice(0, 10);
@@ -473,8 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // -------- PICKERS (telegram-friendly) --------
   function pickTradeId(list, title) {
-    // Telegram iOS sometimes blocks <select> interactions;
-    // Use a simple prompt picker.
+    // Telegram iOS sometimes blocks <select> interactions; use prompt picker.
     if (!list.length) return "";
     const lines = list.map((t, i) => {
       const pnlTxt = t.status === "CLOSED" ? fmtMoney(t.pnl || 0) : "OPEN";
@@ -615,7 +613,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveState();
     alert("Review saved!");
 
-    // reset to defaults (as requested)
+    // reset to defaults
     if ($("rPlan")) $("rPlan").value = "YES";
     if ($("rMistake")) $("rMistake").value = "";
     if ($("rReviewNotes")) $("rReviewNotes").value = "";
@@ -848,7 +846,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // -------- Wiring / Listeners --------
-
   // New trade seg + inputs
   $$("#dirSeg .segBtn").forEach(b => b.addEventListener("click", () => {
     setSegActive("dirSeg", "dir", b.dataset.dir);

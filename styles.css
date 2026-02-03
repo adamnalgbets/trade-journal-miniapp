@@ -145,6 +145,7 @@ body::after{
   display:flex;
   justify-content:space-between;
   font-weight:900;
+  gap:10px;
 }
 .kv{margin-top:6px;font-size:13px;}
 .k{color:var(--muted);}
@@ -176,6 +177,7 @@ body::after{
   grid-template-columns:1fr 1fr;
   gap:10px;
 }
+
 /* Forms */
 .form{display:grid;gap:12px;}
 .row{display:grid;gap:6px;}
@@ -237,6 +239,15 @@ textarea{resize:vertical;min-height:80px;}
   height:54px;
   border-radius:50%;
   font-size:20px;
+}
+
+/* Footer credit */
+.credit{
+  margin-top:24px;
+  padding:16px 8px 10px;
+  text-align:center;
+  color:rgba(255,255,255,.45);
+  font-size:12px;
 }
 
 /* Mobile tweaks */

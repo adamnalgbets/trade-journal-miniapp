@@ -6,7 +6,7 @@
   <title>AdigaFX Trade Journal</title>
 
   <link rel="icon" href="adigafx_icon.png"/>
-  <link rel="stylesheet" href="styles.css?v=30"/>
+  <link rel="stylesheet" href="styles.css?v=31"/>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -19,12 +19,8 @@
       <img src="adigafx_logo_128.png" class="logo" alt="AdigaFX"/>
       <div>
         <div class="title">AdigaFX</div>
-        <div class="subtitle">XAUUSD • Local Journal</div>
+        <div class="subtitle">XAUUSD • Trade Journal (Local)</div>
       </div>
-    </div>
-    <div class="headerRight">
-      <span class="pill" id="pillStorage">Local</span>
-      <span class="pill soft" id="pillVersion">v30</span>
     </div>
   </header>
 
@@ -39,128 +35,94 @@
     <button class="tab" data-route="edit" type="button">Edit</button>
   </nav>
 
-  <!-- DASH / HOME -->
+  <!-- DASHBOARD -->
   <section class="screen active" id="screen-dash">
+
+    <!-- TIME FILTER -->
+    <div class="seg" id="timeSeg">
+      <button class="segBtn active" type="button" data-time="ALL">ALL</button>
+      <button class="segBtn" type="button" data-time="TODAY">TODAY</button>
+      <button class="segBtn" type="button" data-time="WEEK">WEEK</button>
+      <button class="segBtn" type="button" data-time="MONTH">MONTH</button>
+    </div>
+
     <div class="panel">
-      <div class="panelTitle">Dashboard</div>
+      <div class="panelTitle">Overview</div>
 
-      <!-- time filter -->
-      <div class="seg tiny" id="timeSeg">
-        <button class="segBtn active" type="button" data-time="ALL">All</button>
-        <button class="segBtn" type="button" data-time="TODAY">Today</button>
-        <button class="segBtn" type="button" data-time="WEEK">Week</button>
-        <button class="segBtn" type="button" data-time="MONTH">Month</button>
-      </div>
-
-      <!-- quick actions -->
-      <div class="quickActions">
-        <button class="btn ghost small" id="qaNew" type="button">+ New</button>
-        <button class="btn ghost small" id="qaChecklist" type="button">✓ Checklist</button>
-        <button class="btn ghost small" id="qaClose" type="button">🏁 Close</button>
-        <button class="btn ghost small" id="qaAll" type="button">📚 All Trades</button>
-      </div>
-
-      <!-- core stats (1-10 + extras) -->
       <div class="dashGrid">
         <div class="dashCard">
           <div class="k">Total PnL</div>
           <div class="big" id="statPnl">$0.00</div>
-          <div class="s" id="statPnlHint">Closed only</div>
         </div>
 
         <div class="dashCard">
           <div class="k">Win Rate</div>
           <div class="big" id="statWinRate">0%</div>
-          <div class="s" id="statWins">Wins: 0 • Losses: 0</div>
+          <div class="k" id="statWins"></div>
         </div>
 
         <div class="dashCard">
           <div class="k">Avg R</div>
           <div class="big" id="statAvgR">0.00R</div>
-          <div class="s" id="statExp">Expectancy: 0.00R</div>
+          <div class="k" id="statExp"></div>
         </div>
 
         <div class="dashCard">
-          <div class="k">Open Risk $</div>
+          <div class="k">Open Risk</div>
           <div class="big" id="statOpenRisk">$0.00</div>
-          <div class="s" id="statOpenCount">Open trades: 0</div>
+          <div class="k" id="statOpenCount"></div>
         </div>
 
         <div class="dashCard">
           <div class="k">MAE Avg</div>
           <div class="big" id="statMaeAvg">$0.00</div>
-          <div class="s">MAE = worst against you</div>
         </div>
 
         <div class="dashCard">
           <div class="k">MFE Avg</div>
           <div class="big" id="statMfeAvg">$0.00</div>
-          <div class="s">MFE = best for you</div>
         </div>
 
         <div class="dashCard">
           <div class="k">Best / Worst</div>
-          <div class="big smallBig" id="statBestWorst">$0.00 / $0.00</div>
-          <div class="s" id="statBestWorstHint">Best / Worst (Closed)</div>
+          <div class="big" id="statBestWorst">$0 / $0</div>
         </div>
 
         <div class="dashCard">
           <div class="k">Streak</div>
           <div class="big" id="statStreak">W0 / L0</div>
-          <div class="s">Current win / loss streak</div>
         </div>
 
         <div class="dashCard">
           <div class="k">Discipline Cost</div>
           <div class="big" id="statDiscipline">$0.00</div>
-          <div class="s" id="statDiscHint">Plan=NO or Mistake</div>
         </div>
 
         <div class="dashCard">
           <div class="k">Top Setup</div>
-          <div class="big smallBig" id="statTopSetup">—</div>
-          <div class="s" id="statTopSetupHint">Most profitable strategy/tags</div>
+          <div class="big" id="statTopSetup">—</div>
+          <div class="k" id="statTopSetupHint"></div>
         </div>
-      </div>
-
-      <!-- by session -->
-      <div class="panel" style="margin-top:12px;">
-        <div class="panelTitle">Session Performance</div>
-        <div class="sessionGrid">
-          <div class="sessionCard">
-            <div class="k">Asia</div>
-            <div class="big smallBig" id="sessAsia">$0.00</div>
-            <div class="s" id="sessAsiaMeta">0 trades</div>
-          </div>
-          <div class="sessionCard">
-            <div class="k">London</div>
-            <div class="big smallBig" id="sessLondon">$0.00</div>
-            <div class="s" id="sessLondonMeta">0 trades</div>
-          </div>
-          <div class="sessionCard">
-            <div class="k">NY</div>
-            <div class="big smallBig" id="sessNY">$0.00</div>
-            <div class="s" id="sessNYMeta">0 trades</div>
-          </div>
-          <div class="sessionCard">
-            <div class="k">Unknown</div>
-            <div class="big smallBig" id="sessU">$0.00</div>
-            <div class="s" id="sessUMeta">0 trades</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- recent trades -->
-      <div class="panel" style="margin-top:12px;">
-        <div class="panelTitle">Recent Trades</div>
-        <div id="tradesList" class="list"></div>
-      </div>
-
-      <div class="footerNote">
-        Built by <b>FaShuSh</b> for <b>AdigaFX</b> • Local data only
       </div>
     </div>
+
+    <div class="panel">
+      <div class="panelTitle">Sessions</div>
+      <div class="dashGrid">
+        <div class="dashCard"><div class="k">Asia</div><div class="big" id="sessAsia">$0</div><div class="k" id="sessAsiaMeta"></div></div>
+        <div class="dashCard"><div class="k">London</div><div class="big" id="sessLondon">$0</div><div class="k" id="sessLondonMeta"></div></div>
+        <div class="dashCard"><div class="k">New York</div><div class="big" id="sessNY">$0</div><div class="k" id="sessNYMeta"></div></div>
+        <div class="dashCard"><div class="k">Unknown</div><div class="big" id="sessU">$0</div><div class="k" id="sessUMeta"></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panelTitle">Recent Trades</div>
+      <div id="tradesList" class="list"></div>
+    </div>
+
   </section>
+
   <!-- CHECKLIST -->
   <section class="screen" id="screen-check">
     <div class="panel">
@@ -217,19 +179,20 @@
           <div class="kv"><span class="k">Risk $ (approx):</span> <span class="v" id="cRiskUsd">$0.00</span></div>
         </div>
 
-        <div class="row maeBox">
-          <div class="maeTitle">Checklist (not required)</div>
+        <div class="maeBox">
+          <div class="maeTitle">Checklist (NOT required)</div>
+          <div class="maeText">You can leave everything unchecked — it will still save the trade.</div>
 
-          <div class="checkGrid" style="margin-top:8px;">
-            <label class="checkItem"><input type="checkbox" class="cBox"/> Trend aligned (HTF)</label>
-            <label class="checkItem"><input type="checkbox" class="cBox"/> Key level / POI</label>
-            <label class="checkItem"><input type="checkbox" class="cBox"/> Entry confirmation</label>
-            <label class="checkItem"><input type="checkbox" class="cBox"/> RR acceptable</label>
-            <label class="checkItem"><input type="checkbox" class="cBox"/> News checked</label>
-            <label class="checkItem"><input type="checkbox" class="cBox"/> Mindset OK</label>
+          <div style="margin-top:10px; line-height:1.9;">
+            <label><input type="checkbox" class="cBox"/> Trend aligned (HTF)</label><br/>
+            <label><input type="checkbox" class="cBox"/> Key level / POI</label><br/>
+            <label><input type="checkbox" class="cBox"/> Entry confirmation</label><br/>
+            <label><input type="checkbox" class="cBox"/> RR acceptable</label><br/>
+            <label><input type="checkbox" class="cBox"/> News checked</label><br/>
+            <label><input type="checkbox" class="cBox"/> Mindset OK</label>
           </div>
 
-          <div class="row" style="margin-top:10px;">
+          <div class="row" style="margin-top:12px;">
             <label>Notes (optional)</label>
             <textarea id="cNotes" rows="3" placeholder="Why this trade?"></textarea>
           </div>
@@ -309,8 +272,8 @@
         </div>
 
         <div class="row">
-          <label>Strategy / Tags</label>
-          <input id="fStrategy" placeholder="e.g. BOS + FVG"/>
+          <label>Strategy / Setup</label>
+          <input id="fStrategy" placeholder="e.g. BOS + FVG / Sweep + Reclaim"/>
         </div>
 
         <div class="row">
@@ -328,11 +291,8 @@
     <div class="panel">
       <div class="panelTitle">Close Trade</div>
 
-      <div class="row">
-        <label>Select OPEN trade</label>
-        <select id="closeSelect"></select>
-        <div class="kv" id="closeMeta"></div>
-      </div>
+      <button class="btn ghost" id="closePickBtn" type="button">Tap to choose OPEN trade…</button>
+      <div class="kv" id="closeMeta"></div>
 
       <div class="grid2" style="margin-top:10px;">
         <div class="row">
@@ -347,9 +307,7 @@
 
       <div class="maeBox" style="margin-top:12px;">
         <div class="maeTitle">MAE / MFE</div>
-        <div class="maeText">
-          <b>MAE</b> = worst against you (max adverse). <b>MFE</b> = best for you (max favorable).
-        </div>
+        <div class="maeText"><b>MAE</b> = worst against you (max adverse). <b>MFE</b> = best for you (max favorable).</div>
         <div class="maeArt">
           LONG: MAE = <span class="red">lowest</span> • MFE = <span class="green">highest</span><br/>
           SHORT: MAE = <span class="red">highest</span> • MFE = <span class="green">lowest</span>
@@ -380,11 +338,8 @@
     <div class="panel">
       <div class="panelTitle">Review Trade</div>
 
-      <div class="row">
-        <label>Select trade</label>
-        <select id="reviewSelect"></select>
-        <div class="kv" id="reviewMeta"></div>
-      </div>
+      <button class="btn ghost" id="reviewPickBtn" type="button">Tap to choose trade…</button>
+      <div class="kv" id="reviewMeta"></div>
 
       <div class="form" style="margin-top:10px;">
         <div class="row">
@@ -423,11 +378,8 @@
     <div class="panel">
       <div class="panelTitle">Edit Trade</div>
 
-      <div class="row">
-        <label>Select trade</label>
-        <select id="editSelect"></select>
-        <div class="kv" id="editMeta"></div>
-      </div>
+      <button class="btn ghost" id="editPickBtn" type="button">Tap to choose trade…</button>
+      <div class="kv" id="editMeta"></div>
 
       <div class="form" style="margin-top:10px;">
         <div class="row">
@@ -521,7 +473,7 @@
         </div>
 
         <div class="row">
-          <label>Strategy / Tags</label>
+          <label>Strategy / Setup</label>
           <input id="eStrategy"/>
         </div>
 
@@ -535,8 +487,21 @@
     </div>
   </section>
 
+  <!-- QUICK ACTIONS -->
+  <div class="quickActions">
+    <button class="btn" id="qaNew" type="button">+</button>
+    <button class="btn ghost" id="qaChecklist" type="button">✓</button>
+    <button class="btn ghost" id="qaClose" type="button">⏹</button>
+    <button class="btn ghost" id="qaAll" type="button">≡</button>
+  </div>
+
+  <!-- CREDIT -->
+  <footer class="credit">
+    Built by <b>FaShuSh</b> for <b>AdigaFX</b>
+  </footer>
+
 </div>
 
-<script src="app.js?v=30"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>
