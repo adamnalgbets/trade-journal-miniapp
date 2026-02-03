@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trade Journal</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="sub">XAUUSD only (v1)</p>
+      </div>
+      <button id="langBtn" class="chip">EN</button>
+    </header>
+
+    <section class="cards">
+      <div class="card">
+        <div class="label">Total P&amp;L</div>
+        <div class="value" id="totalPnl">$0</div>
+      </div>
+      <div class="card">
+        <div class="label">Win Rate</div>
+        <div class="value" id="winRate">0%</div>
+      </div>
+      <div class="card">
+        <div class="label">Avg R</div>
+        <div class="value" id="avgR">0.00R</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panelTitle">Quick Actions</div>
+      <div class="actions">
+        <button class="btn" id="newTradeBtn">➕ New Trade</button>
+        <button class="btn ghost" id="statsBtn">📊 Stats</button>
+        <button class="btn ghost" id="reviewBtn">🧠 Review</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panelTitle">Trades</div>
+      <div id="tradesList" class="list"></div>
+      <button class="btn small" id="seedBtn">Add demo trade</button>
+      <button class="btn small danger" id="clearBtn">Clear local data</button>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
