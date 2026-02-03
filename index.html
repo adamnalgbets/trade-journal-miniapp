@@ -6,14 +6,13 @@
   <title>AdigaFX Trade Journal</title>
 
   <link rel="icon" href="adigafx_icon.png"/>
-  <link rel="stylesheet" href="styles.css?v=34"/>
+  <link rel="stylesheet" href="styles.css?v=35"/>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
   <div class="app">
 
-    <!-- HEADER -->
     <header class="top">
       <div class="brand">
         <img src="adigafx_logo_128.png" class="logo" alt="AdigaFX"/>
@@ -22,11 +21,9 @@
           <div class="subtitle">XAUUSD • Trade Journal (Local)</div>
         </div>
       </div>
-
       <button class="btn ghost small" id="openSettingsBtn" type="button">⚙️</button>
     </header>
 
-    <!-- TABS -->
     <nav class="tabs">
       <button class="tab active" data-route="dash" type="button">Home</button>
       <button class="tab" data-route="check" type="button">Checklist</button>
@@ -36,9 +33,10 @@
       <button class="tab" data-route="all" type="button">All</button>
       <button class="tab" data-route="edit" type="button">Edit</button>
       <button class="tab" data-route="settings" type="button">Settings</button>
+      <button class="tab" data-route="snapshot" type="button">Snapshot</button>
     </nav>
 
-    <!-- HOME / DASH -->
+    <!-- HOME -->
     <section class="screen active" id="screen-dash">
       <div class="seg" id="timeSeg">
         <button class="segBtn active" type="button" data-time="ALL">ALL</button>
@@ -50,7 +48,7 @@
       <div class="panel">
         <div class="panelTitle">Overview</div>
         <div class="dashGrid">
-          <div class="dashCard"><div class="k">Total PnL</div><div class="big" id="statPnl">$0.00</div></div>
+          <div class="dashCard"><div class="k">Total PnL</div><div class="big" id="statPnl">$0.00</div><div class="k" id="statPnlMeta"></div></div>
           <div class="dashCard"><div class="k">Win Rate</div><div class="big" id="statWinRate">0%</div><div class="k" id="statWins"></div></div>
           <div class="dashCard"><div class="k">Avg R</div><div class="big" id="statAvgR">0.00R</div><div class="k" id="statExp"></div></div>
           <div class="dashCard"><div class="k">Open Risk</div><div class="big" id="statOpenRisk">$0.00</div><div class="k" id="statOpenCount"></div></div>
@@ -58,9 +56,9 @@
           <div class="dashCard"><div class="k">MAE Avg</div><div class="big" id="statMaeAvg">$0.00</div></div>
           <div class="dashCard"><div class="k">MFE Avg</div><div class="big" id="statMfeAvg">$0.00</div></div>
           <div class="dashCard"><div class="k">Best / Worst</div><div class="big" id="statBestWorst">$0 / $0</div></div>
-          <div class="dashCard"><div class="k">Streak</div><div class="big" id="statStreak">W0 / L0</div></div>
+          <div class="dashCard"><div class="k">Streak</div><div class="big" id="statStreak">—</div><div class="k" id="statStreakMeta"></div></div>
 
-          <div class="dashCard"><div class="k">Discipline Cost</div><div class="big" id="statDiscipline">$0.00</div></div>
+          <div class="dashCard"><div class="k">Discipline Cost</div><div class="big" id="statDiscipline">$0.00</div><div class="k" id="statDisciplineMeta"></div></div>
           <div class="dashCard"><div class="k">Top Setup</div><div class="big" id="statTopSetup">—</div><div class="k" id="statTopSetupHint"></div></div>
         </div>
       </div>
@@ -76,7 +74,7 @@
       </div>
 
       <div class="panel">
-        <div class="panelTitle">Recent Trades</div>
+        <div class="panelTitle">Recent (filtered)</div>
         <div id="tradesList" class="list"></div>
       </div>
     </section>
@@ -118,23 +116,23 @@
             <div class="row"><label>TP (optional)</label><input id="cTP" type="number" step="0.01"/></div>
           </div>
 
-          <div class="kv"><span class="k">Risk $ (approx):</span> <span class="v" id="cRiskUsd">$0.00</span></div>
+          <div class="kv"><span class="k">Risk $:</span> <span class="v" id="cRiskUsd">$0.00</span></div>
 
           <div class="maeBox">
             <div class="maeTitle">Checklist (NOT required)</div>
-            <div class="maeText">You can leave everything unchecked — it will still save the trade.</div>
+            <div class="maeText">Leave unchecked if you want — still saves.</div>
 
             <div class="checkCols">
-              <label><input type="checkbox" class="cBox"/> Trend aligned (HTF)</label>
-              <label><input type="checkbox" class="cBox"/> Key level / POI</label>
-              <label><input type="checkbox" class="cBox"/> Entry confirmation</label>
-              <label><input type="checkbox" class="cBox"/> RR acceptable</label>
+              <label><input type="checkbox" class="cBox"/> Trend aligned</label>
+              <label><input type="checkbox" class="cBox"/> Key level</label>
+              <label><input type="checkbox" class="cBox"/> Confirmation</label>
+              <label><input type="checkbox" class="cBox"/> RR OK</label>
               <label><input type="checkbox" class="cBox"/> News checked</label>
               <label><input type="checkbox" class="cBox"/> Mindset OK</label>
             </div>
 
             <div class="row">
-              <label>Notes (optional)</label>
+              <label>Notes</label>
               <textarea id="cNotes" rows="3"></textarea>
             </div>
 
@@ -181,18 +179,12 @@
             <div class="row"><label>Lot</label><input id="fLot" type="number" step="0.01"/></div>
           </div>
 
-          <div class="grid2">
-            <div class="row"><label>Exit (optional)</label><input id="fExit" type="number" step="0.01"/></div>
-            <div class="row"><label>PnL ($) (optional)</label><input id="fPnl" type="number" step="0.01"/></div>
-          </div>
-
-          <div class="kv"><span class="k">Risk $:</span> <span class="v" id="riskUsd">$0.00</span></div>
-          <div class="kv"><span class="k">R preview:</span> <span class="v" id="rMultiple">0.00R</span></div>
-
-          <div class="row"><label>Strategy / Setup</label><input id="fStrategy"/></div>
+          <div class="row"><label>Strategy / Setup</label><input id="fStrategy" placeholder="e.g. Sweep + MSS"/></div>
           <div class="row"><label>Notes</label><textarea id="fNotes" rows="3"></textarea></div>
 
-          <button class="btn" id="saveTradeBtn" type="button">✅ Save</button>
+          <div class="kv"><span class="k">Risk $:</span> <span class="v" id="riskUsd">$0.00</span></div>
+
+          <button class="btn" id="saveTradeBtn" type="button">✅ Save OPEN</button>
         </div>
       </div>
     </section>
@@ -202,7 +194,10 @@
       <div class="panel">
         <div class="panelTitle">Close Trade</div>
 
-        <button class="btn ghost" id="closePickBtn" type="button">Tap to choose OPEN trade…</button>
+        <div class="row">
+          <label>Select OPEN trade</label>
+          <select id="closeSelect"></select>
+        </div>
         <div class="kv" id="closeMeta"></div>
 
         <div class="grid2">
@@ -212,10 +207,13 @@
 
         <div class="maeBox">
           <div class="maeTitle">MAE / MFE</div>
-          <div class="maeText"><b>MAE</b> = worst against you (max adverse). <b>MFE</b> = best for you (max favorable).</div>
+          <div class="maeText">
+            <b>MAE</b> = Maximum Adverse Excursion (worst against you) •
+            <b>MFE</b> = Maximum Favorable Excursion (best for you)
+          </div>
           <div class="maeArt">
-            LONG: MAE = <span class="red">lowest</span> • MFE = <span class="green">highest</span><br/>
-            SHORT: MAE = <span class="red">highest</span> • MFE = <span class="green">lowest</span>
+            LONG: MAE=<span class="red">lowest</span> • MFE=<span class="green">highest</span><br/>
+            SHORT: MAE=<span class="red">highest</span> • MFE=<span class="green">lowest</span>
           </div>
 
           <div class="grid2">
@@ -231,6 +229,7 @@
             </div>
           </div>
 
+          <div class="kv"><span class="k">Risk $:</span> <span class="v" id="closeRiskUsd">$0.00</span></div>
           <div class="kv"><span class="k">R result:</span> <span class="v" id="closeR">0.00R</span></div>
         </div>
 
@@ -243,7 +242,10 @@
       <div class="panel">
         <div class="panelTitle">Review Trade</div>
 
-        <button class="btn ghost" id="reviewPickBtn" type="button">Tap to choose trade…</button>
+        <div class="row">
+          <label>Select trade</label>
+          <select id="reviewSelect"></select>
+        </div>
         <div class="kv" id="reviewMeta"></div>
 
         <div class="form">
@@ -255,7 +257,22 @@
             </select>
           </div>
 
-          <div class="row"><label>Mistake (optional)</label><input id="rMistake"/></div>
+          <div class="row">
+            <label>Discipline mistake type</label>
+            <select id="rMistakeType">
+              <option value="">None</option>
+              <option value="Moved SL">Moved SL</option>
+              <option value="Early Exit">Early Exit</option>
+              <option value="Late Entry">Late Entry</option>
+              <option value="Overtrade">Overtrade</option>
+              <option value="Revenge">Revenge</option>
+              <option value="FOMO">FOMO</option>
+              <option value="No SL">No SL</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="row"><label>Mistake note (optional)</label><input id="rMistake"/></div>
           <div class="row"><label>Review notes</label><textarea id="rReviewNotes" rows="4"></textarea></div>
 
           <button class="btn" id="saveReviewBtn" type="button">💾 Save review</button>
@@ -266,7 +283,7 @@
     <!-- ALL -->
     <section class="screen" id="screen-all">
       <div class="panel">
-        <div class="panelTitle">All Trades</div>
+        <div class="panelTitle">All Trades (filtered)</div>
         <div id="allTradesList" class="list"></div>
       </div>
     </section>
@@ -276,7 +293,10 @@
       <div class="panel">
         <div class="panelTitle">Edit Trade</div>
 
-        <button class="btn ghost" id="editPickBtn" type="button">Tap to choose trade…</button>
+        <div class="row">
+          <label>Select trade</label>
+          <select id="editSelect"></select>
+        </div>
         <div class="kv" id="editMeta"></div>
 
         <div class="form">
@@ -334,12 +354,12 @@
 
             <div class="grid2">
               <div class="row">
-                <label>MAE price (worst)</label>
+                <label>MAE price</label>
                 <input id="eMAE" type="number" step="0.01"/>
                 <div class="kv"><span class="k">MAE $:</span> <span class="v" id="eMAEUsd">$0.00</span></div>
               </div>
               <div class="row">
-                <label>MFE price (best)</label>
+                <label>MFE price</label>
                 <input id="eMFE" type="number" step="0.01"/>
                 <div class="kv"><span class="k">MFE $:</span> <span class="v" id="eMFEUsd">$0.00</span></div>
               </div>
@@ -384,7 +404,7 @@
           <button class="segBtn" type="button" data-lang="HE">HE</button>
         </div>
         <div class="maeText" style="margin-top:10px;">
-          English is default. Hebrew toggle is saved now; full UI translation can be added next.
+          Default is EN. Toggle is saved (full translation can be added later).
         </div>
       </div>
 
@@ -394,17 +414,16 @@
           <input type="checkbox" id="hidePnlToggle"/>
           <span>Hide PnL amounts (default OFF)</span>
         </label>
-        <div class="maeText" style="margin-top:6px;">When ON: $ amounts are hidden everywhere, but R stays visible.</div>
       </div>
 
       <div class="panel danger">
         <div class="panelTitle">Danger zone</div>
         <button class="btn danger" id="resetAllBtn" type="button">Reset all data</button>
-        <div class="maeText" style="margin-top:8px;">This deletes everything saved locally on this device.</div>
+        <div class="maeText" style="margin-top:8px;">Deletes everything saved locally on this device.</div>
       </div>
     </section>
 
-    <!-- SNAPSHOT SCREEN -->
+    <!-- SNAPSHOT -->
     <section class="screen" id="screen-snapshot">
       <div class="panel snapshot">
         <div class="snapHeader">
@@ -423,7 +442,7 @@
         </div>
 
         <div class="snapFooter">
-          Built by <b>FaShuSh</b> for <b>AdigaFX</b> • v34
+          Built by <b>FaShuSh</b> for <b>AdigaFX</b> • v35
         </div>
       </div>
 
@@ -433,7 +452,6 @@
       </div>
     </section>
 
-    <!-- QUICK ACTIONS -->
     <div class="quickActions">
       <button class="btn" id="qaNew" type="button">+</button>
       <button class="btn ghost" id="qaChecklist" type="button">✓</button>
@@ -441,12 +459,11 @@
       <button class="btn ghost" id="qaAll" type="button">≡</button>
     </div>
 
-    <!-- CREDIT -->
     <footer class="credit">
       Built by <b>FaShuSh</b> for <b>AdigaFX</b>
     </footer>
   </div>
 
-  <script src="app.js?v=34"></script>
+  <script src="app.js?v=35"></script>
 </body>
 </html>
