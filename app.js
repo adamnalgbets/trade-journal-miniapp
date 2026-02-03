@@ -3,12 +3,10 @@ document.addEventListener("DOMContentLoaded", () => {
   tg?.ready();
   tg?.expand();
 
-  const STORAGE_KEY = "adigafx_tj_v3";
+  const STORAGE_KEY = "adigafx_tj_v5";
 
   const I18N = {
     EN: {
-      tabDash:"Dashboard", tabCheck:"Checklist", tabNew:"New Trade", tabClose:"Close Trade", tabStats:"Stats", tabReview:"Review", tabAll:"All Trades", tabSettings:"Settings",
-      appDash:"AdigaFX • Dashboard", appCheck:"AdigaFX • Checklist", appNew:"AdigaFX • New Trade", appClose:"AdigaFX • Close Trade", appStats:"AdigaFX • Stats", appReview:"AdigaFX • Trade Review", appAll:"AdigaFX • All Trades", appSettings:"Settings",
       sub:"XAUUSD only • Local storage",
       saved:"Saved!",
       needFields:"Please fill Entry, Stop Loss and Lot.",
@@ -19,14 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
       importOk:"Import completed.",
       importBad:"Invalid JSON file.",
       pickTap:"Tap to choose…",
-      modalReviewTitle:"Select trade",
-      modalCloseTitle:"Select OPEN trade",
-      modalSearch:"Search: date / LONG / SHORT / pnl…",
-      mustCheckAll:"Please tick ALL checklist items to add the trade."
+      delConfirm:"Delete this trade? (cannot undo)",
+      delDone:"Deleted."
     },
     HE: {
-      tabDash:"דשבורד", tabCheck:"צ׳ק ליסט", tabNew:"טרייד חדש", tabClose:"סגירת טרייד", tabStats:"סטטיסטיקות", tabReview:"ביקורת", tabAll:"כל העסקאות", tabSettings:"הגדרות",
-      appDash:"AdigaFX • דשבורד", appCheck:"AdigaFX • צ׳ק ליסט", appNew:"AdigaFX • טרייד חדש", appClose:"AdigaFX • סגירת טרייד", appStats:"AdigaFX • סטטיסטיקות", appReview:"AdigaFX • ביקורת עסקה", appAll:"AdigaFX • כל העסקאות", appSettings:"הגדרות",
       sub:"XAUUSD בלבד • שמירה מקומית",
       saved:"נשמר!",
       needFields:"מלא Entry / SL / Lot.",
@@ -37,10 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
       importOk:"הייבוא הושלם.",
       importBad:"קובץ JSON לא תקין.",
       pickTap:"לחץ לבחירה…",
-      modalReviewTitle:"בחר עסקה",
-      modalCloseTitle:"בחר עסקה פתוחה",
-      modalSearch:"חיפוש: תאריך / לונג / שורט / רווח…",
-      mustCheckAll:"סמן V על כל הצ׳ק ליסט ואז אפשר להוסיף."
+      delConfirm:"למחוק את העסקה? (אי אפשר לשחזר)",
+      delDone:"נמחק."
     }
   };
 
@@ -57,7 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${sign}$${Math.abs(n).toFixed(2)}`;
   };
 
-  const setDefaultDate = (id) => { const el = $(id); if (el) el.value = new Date().toISOString().slice(0,10); };
+  const setDefaultDate = (id) => {
+    const el = $(id);
+    if (el && !el.value) el.value = new Date().toISOString().slice(0,10);
+  };
 
   // XAUUSD model: 1 lot = 100oz
   const riskUsdApprox = (entry, sl, lot) => Math.abs(entry - sl) * lot * 100;
@@ -97,20 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const t = I18N[state.lang];
     $("langBtn").textContent = state.lang;
     $("appSubtitle").textContent = t.sub;
-
-    $("tabDash").textContent = t.tabDash;
-    $("tabCheck").textContent = t.tabCheck;
-    $("tabNew").textContent = t.tabNew;
-    $("tabClose").textContent = t.tabClose;
-    $("tabStats").textContent = t.tabStats;
-    $("tabReview").textContent = t.tabReview;
-    $("tabAll").textContent = t.tabAll;
-    $("tabSettings").textContent = t.tabSettings;
-
-    $("reviewPickBtn").textContent = t.pickTap;
-    $("closePickBtn").textContent = t.pickTap;
-    $("tradeSearch").placeholder = t.modalSearch;
-
     document.documentElement.dir = (state.lang === "HE") ? "rtl" : "ltr";
   }
 
@@ -118,22 +99,25 @@ document.addEventListener("DOMContentLoaded", () => {
     $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.route === route));
     $$(".screen").forEach(s => s.classList.toggle("active", s.id === `screen-${route}`));
 
-    const t = I18N[state.lang];
-    if (route === "dash") $("appTitle").textContent = t.appDash;
-    if (route === "check") $("appTitle").textContent = t.appCheck;
-    if (route === "new") $("appTitle").textContent = t.appNew;
-    if (route === "close") $("appTitle").textContent = t.appClose;
-    if (route === "stats") $("appTitle").textContent = t.appStats;
-    if (route === "review") $("appTitle").textContent = t.appReview;
-    if (route === "all") $("appTitle").textContent = t.appAll;
-    if (route === "settings") $("appTitle").textContent = t.appSettings;
-
     if (route === "dash") renderDashboard();
     if (route === "stats") renderStats();
     if (route === "review") renderReviewUI();
     if (route === "close") renderCloseUI();
     if (route === "check") renderChecklistUI();
     if (route === "all") renderAllTrades();
+
+    // Update title
+    const titleMap = {
+      dash: "AdigaFX • Dashboard",
+      check: "AdigaFX • Checklist",
+      new: "AdigaFX • New Trade",
+      close: "AdigaFX • Close Trade",
+      stats: "AdigaFX • Stats",
+      review: "AdigaFX • Trade Review",
+      all: "AdigaFX • All Trades",
+      settings: "Settings"
+    };
+    $("appTitle").textContent = titleMap[route] || "AdigaFX";
   }
 
   function setSegActive(segId, key, val){
@@ -223,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const plotH = h - padTop - padBottom;
     const barW = plotW / bins.length;
 
-    ctx.fillStyle="rgba(59,130,246,.65)";
+    ctx.fillStyle="rgba(59,130,246,.55)";
     bins.forEach((b,i)=>{
       const bh = (b/maxB) * plotH;
       const x = padLeft + i*barW + 8;
@@ -267,6 +251,29 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll("'","&#039;");
   }
 
+  // ✅ Delete trade
+  function deleteTradeById(id){
+    const t = I18N[state.lang];
+    const tr = state.trades.find(x => x.id === id);
+    if (!tr) return;
+
+    if (!confirm(t.delConfirm)) return;
+
+    state.trades = state.trades.filter(x => x.id !== id);
+
+    // clean selections if deleted
+    if (state.reviewSelectedId === id) state.reviewSelectedId = "";
+    if (state.closeSelectedId === id) state.closeSelectedId = "";
+
+    saveState();
+    alert(t.delDone);
+
+    renderDashboard();
+    renderStats();
+    renderAllTrades();
+  }
+
+  // Dashboard list
   function renderTradesList(){
     const t = I18N[state.lang];
     const list = $("tradesList");
@@ -278,7 +285,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     state.trades.slice().reverse().forEach(tr=>{
-      const statusBadge = tr.status === "OPEN" ? `<span class="badge soft">OPEN</span>` : `<span class="badge soft">CLOSED</span>`;
+      const statusBadge = tr.status === "OPEN"
+        ? `<span class="badge soft">OPEN</span>`
+        : `<span class="badge soft">CLOSED</span>`;
       const cls = tr.status === "CLOSED" ? (tr.pnl > 0 ? "green" : tr.pnl < 0 ? "red" : "") : "";
       const pnlText = tr.status === "OPEN" ? "—" : fmtMoney(tr.pnl || 0);
       const rText = tr.status === "OPEN" ? "—" : `${(tr.r || 0).toFixed(2)}R`;
@@ -287,11 +296,11 @@ document.addEventListener("DOMContentLoaded", () => {
       el.className="item";
       el.innerHTML = `
         <div class="itemTop">
-          <div>XAUUSD • ${tr.dir} ${statusBadge}</div>
-          <div class="badge ${cls}">${pnlText} / ${rText}</div>
+          <div>XAUUSD • ${escapeHtml(tr.dir)} ${statusBadge}</div>
+          <div class="badge ${cls}">${escapeHtml(pnlText)} / ${escapeHtml(rText)}</div>
         </div>
         <div class="label">
-          ${tr.date}${tr.session ? " • " + tr.session : ""} • Entry ${tr.entry.toFixed(2)} • SL ${tr.sl.toFixed(2)} • Lot ${tr.lot.toFixed(2)}
+          ${escapeHtml(tr.date)}${tr.session ? " • " + escapeHtml(tr.session) : ""} • Entry ${tr.entry.toFixed(2)} • SL ${tr.sl.toFixed(2)} • Lot ${tr.lot.toFixed(2)}
         </div>
         <div class="row2" style="margin-top:8px;">
           <button class="btn ghost" type="button" data-act="review" data-id="${tr.id}">🧠 Review</button>
@@ -329,6 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTradesList();
   }
 
+  // New Trade
   function resetNewForm(){
     setSegActive("dirSeg","dir","LONG");
     setDefaultDate("fDate");
@@ -408,9 +418,11 @@ document.addEventListener("DOMContentLoaded", () => {
     alert(t.saved);
     resetNewForm();
     renderDashboard();
+    renderAllTrades();
     setActiveTab("dash");
   }
 
+  // ✅ Checklist (NO requirement to tick anything)
   function resetChecklist(){
     setSegActive("cDirSeg","dir","LONG");
     setDefaultDate("cDate");
@@ -418,7 +430,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ["cEntry","cSL","cTP","cLot","cNotes"].forEach(id => $(id).value="");
     $$(".cBox").forEach(b=>b.checked=false);
     $("cRiskUsd").textContent="$0.00";
-    $("cREst").textContent="1.00R";
   }
 
   function updateChecklistRisk(){
@@ -427,16 +438,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const lot = toNum($("cLot").value);
     if (entry==null || sl==null || lot==null){
       $("cRiskUsd").textContent="$0.00";
-      $("cREst").textContent="1.00R";
       return;
     }
     const risk = riskUsdApprox(entry, sl, lot);
     $("cRiskUsd").textContent = fmtMoney(risk);
-    $("cREst").textContent = "1.00R";
   }
 
   function renderChecklistUI(){
-    if (!$("cDate").value) setDefaultDate("cDate");
+    setDefaultDate("cDate");
     updateChecklistRisk();
   }
 
@@ -457,11 +466,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const allChecked = $$(".cBox").every(b => b.checked);
-    if (!allChecked){
-      alert(t.mustCheckAll);
-      return;
-    }
+    // ✅ optional: store how many were checked (NOT required)
+    const checkedCount = $$(".cBox").filter(b => b.checked).length;
+    const totalCount = $$(".cBox").length;
+    const checklistSummary = totalCount ? `Checklist: ${checkedCount}/${totalCount}` : "";
 
     const risk = riskUsdApprox(entry, sl, lot);
 
@@ -474,16 +482,17 @@ document.addEventListener("DOMContentLoaded", () => {
       riskUsd:risk,
       r:0,
       strategy:"Checklist",
-      notes: $("cNotes").value || ""
+      notes: [checklistSummary, $("cNotes").value || ""].filter(Boolean).join("\n")
     });
 
     alert(t.saved);
     resetChecklist();
     renderDashboard();
+    renderAllTrades();
     setActiveTab("dash");
   }
 
-  // Modal picker
+  // Modal Picker
   const modalBack = $("tradeModalBack");
   const modal = $("tradeModal");
   const modalTitle = $("tradeModalTitle");
@@ -549,8 +558,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function openModal(mode){
     modalMode = mode;
-    const t = I18N[state.lang];
-    modalTitle.textContent = mode==="CLOSE" ? t.modalCloseTitle : t.modalReviewTitle;
+    modalTitle.textContent = mode==="CLOSE" ? "Select OPEN trade" : "Select trade";
     modalSearch.value="";
     rebuildModalItems();
     renderModalList("");
@@ -562,8 +570,8 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.classList.remove("open");
   }
 
+  // Review
   function getTradeById(id){ return state.trades.find(t=>t.id===id) || null; }
-
   function setPlanSeg(val){ setSegActive("planSeg","plan",val); }
   function getPlanSeg(){ return getSegActive("planSeg","plan","YES"); }
 
@@ -615,7 +623,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveState();
     alert(t.saved);
 
-    // behavior you asked: after save -> clear + return to empty default
+    // Clear UI + default empty selection
     clearReviewForm();
     state.reviewSelectedId = "";
     saveState();
@@ -625,6 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAllTrades();
   }
 
+  // Close Trade
   function renderCloseUI(preserveInputs=false){
     const t = I18N[state.lang];
     const openTrades = getOpenTradesAll().slice().reverse();
@@ -717,6 +726,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setActiveTab("dash");
   }
 
+  // Stats
   function filteredClosedTrades(){
     const closed = getClosedTradesAll();
     if (state.statsFilter === "MONTH") return closed.filter(t=>isThisMonth(t.date));
@@ -764,7 +774,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMistakes(closed);
   }
 
-  // All Trades + export
+  // Export
   function toCSVRow(arr){
     return arr.map(v => `"${String(v ?? "").replaceAll('"','""')}"`).join(",");
   }
@@ -800,6 +810,7 @@ document.addEventListener("DOMContentLoaded", () => {
     URL.revokeObjectURL(url);
   }
 
+  // ✅ All Trades + Delete button
   function renderAllTrades(){
     const filter = $("allFilter")?.value || "ALL";
     const sort = $("allSort")?.value || "NEWEST";
@@ -876,11 +887,12 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="v">Plan: <b>${escapeHtml(rev.plan || "—")}</b><br/>Mistake: <b>${escapeHtml(rev.mistake || "—")}</b><br/>Notes: ${escapeHtml(rev.notes || "—")}</div>
         </div>
 
-        <div class="row2" style="margin-top:10px;">
+        <div class="btnRow3">
           <button class="btn ghost" type="button" data-act="review" data-id="${tr.id}">Open Review</button>
           <button class="btn ghost" type="button" data-act="${tr.status==="OPEN" ? "close" : "stats"}" data-id="${tr.id}">
             ${tr.status==="OPEN" ? "Close" : "Stats"}
           </button>
+          <button class="btn danger" type="button" data-act="delete" data-id="${tr.id}">Delete</button>
         </div>
       `;
 
@@ -891,6 +903,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (act==="review"){ state.reviewSelectedId=id; saveState(); setActiveTab("review"); }
           if (act==="close"){ state.closeSelectedId=id; saveState(); setActiveTab("close"); }
           if (act==="stats"){ setActiveTab("stats"); }
+          if (act==="delete"){ deleteTradeById(id); }
         });
       });
 
@@ -898,6 +911,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Settings import/reset
   function importJSONFile(file){
     const t = I18N[state.lang];
     const reader = new FileReader();
@@ -966,16 +980,19 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAllTrades();
   });
 
+  // New trade events
   $$("#dirSeg .segBtn").forEach(b => b.addEventListener("click", ()=>{ setSegActive("dirSeg","dir",b.dataset.dir); updateNewLiveRisk(); }));
   ["fEntry","fSL","fLot","fExit","fPnl"].forEach(id => $(id).addEventListener("input", updateNewLiveRisk));
   $("saveTradeBtn").addEventListener("click", saveNewTrade);
   $("resetFormBtn").addEventListener("click", ()=>{ resetNewForm(); updateNewLiveRisk(); });
 
+  // Checklist events
   $$("#cDirSeg .segBtn").forEach(b => b.addEventListener("click", ()=>{ setSegActive("cDirSeg","dir",b.dataset.dir); updateChecklistRisk(); }));
   ["cEntry","cSL","cLot"].forEach(id => $(id).addEventListener("input", updateChecklistRisk));
   $("cAddTradeBtn").addEventListener("click", addFromChecklist);
   $("cResetBtn").addEventListener("click", ()=>{ resetChecklist(); updateChecklistRisk(); });
 
+  // Review events
   $$("#planSeg .segBtn").forEach(b => b.addEventListener("click", ()=>setPlanSeg(b.dataset.plan)));
   $("pickLastBtn").addEventListener("click", ()=>{
     const last = state.trades.slice().reverse()[0];
@@ -987,10 +1004,12 @@ document.addEventListener("DOMContentLoaded", () => {
   $("saveReviewBtn").addEventListener("click", saveReview);
   $("clearReviewBtn").addEventListener("click", clearReviewForm);
 
+  // Close events
   ["closeExit","closePnl"].forEach(id => $(id).addEventListener("input", updateClosePreview));
   $("closeTradeBtn").addEventListener("click", closeTradeSave);
   $("closeResetBtn").addEventListener("click", resetCloseForm);
 
+  // Stats filter
   $$("#statsFilterSeg .segBtn").forEach(b => b.addEventListener("click", ()=>{
     $$("#statsFilterSeg .segBtn").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
@@ -999,6 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderStats();
   }));
 
+  // Settings
   $("exportBtn").addEventListener("click", exportJSON);
   $("importFile").addEventListener("change", (e)=>{
     const file = e.target.files?.[0];
@@ -1008,12 +1028,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   $("resetAllBtn").addEventListener("click", resetAll);
 
+  // All Trades filters
   $("allFilter").addEventListener("change", renderAllTrades);
   $("allSort").addEventListener("change", renderAllTrades);
   $("allSearch").addEventListener("input", renderAllTrades);
   $("exportCsvBtn").addEventListener("click", exportCSV);
   $("exportJsonBtn2").addEventListener("click", exportJSON);
 
+  // Modal events
   $("reviewPickBtn").addEventListener("click", ()=>openModal("REVIEW"));
   $("closePickBtn").addEventListener("click", ()=>openModal("CLOSE"));
   $("tradeModalClose").addEventListener("click", closeModal);
@@ -1022,6 +1044,7 @@ document.addEventListener("DOMContentLoaded", () => {
   modal.addEventListener("click", (e)=>e.stopPropagation());
   modal.addEventListener("touchstart", (e)=>e.stopPropagation(), { passive:true });
 
+  // init
   applyLang();
   setDefaultDate("fDate");
   setDefaultDate("cDate");

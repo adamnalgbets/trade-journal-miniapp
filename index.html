@@ -6,7 +6,7 @@
   <title>AdigaFX Trade Journal</title>
 
   <link rel="icon" href="adigafx_icon.png" />
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=12" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -61,9 +61,9 @@
 
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblEquityCurve">AdigaFX • Equity Curve</div>
+          <div class="panelTitle">AdigaFX • Equity Curve</div>
           <div class="panelRight">
-            <span class="badge" id="eqModeBadge">CLOSED</span>
+            <span class="badge">CLOSED</span>
           </div>
         </div>
         <canvas id="equityCanvas" width="900" height="340" class="canvas"></canvas>
@@ -71,7 +71,7 @@
 
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblTrades">Trades</div>
+          <div class="panelTitle">Trades</div>
           <div class="panelRight">
             <button class="btn small ghost" id="addDemoBtn" type="button">Add demo</button>
           </div>
@@ -95,15 +95,13 @@
     <section class="screen" id="screen-check">
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblCheckTitle">AdigaFX • Pre-Trade Checklist</div>
-          <div class="panelRight">
-            <span class="badge">XAUUSD</span>
-          </div>
+          <div class="panelTitle">AdigaFX • Pre-Trade Checklist</div>
+          <div class="panelRight"><span class="badge">XAUUSD</span></div>
         </div>
 
         <div class="form">
           <div class="row">
-            <label id="lblC_Dir">Direction</label>
+            <label>Direction</label>
             <div class="seg" id="cDirSeg">
               <button type="button" class="segBtn active" data-dir="LONG">LONG</button>
               <button type="button" class="segBtn" data-dir="SHORT">SHORT</button>
@@ -112,11 +110,11 @@
 
           <div class="grid2">
             <div class="row">
-              <label id="lblC_Date">Date</label>
+              <label>Date</label>
               <input id="cDate" type="date" />
             </div>
             <div class="row">
-              <label id="lblC_Session">Session</label>
+              <label>Session</label>
               <select id="cSession">
                 <option value="">—</option>
                 <option value="Asia">Asia</option>
@@ -128,22 +126,22 @@
 
           <div class="grid2">
             <div class="row">
-              <label id="lblC_Entry">Entry</label>
+              <label>Entry</label>
               <input id="cEntry" type="number" step="0.01" placeholder="2356.20" />
             </div>
             <div class="row">
-              <label id="lblC_SL">Stop Loss</label>
+              <label>Stop Loss</label>
               <input id="cSL" type="number" step="0.01" placeholder="2350.80" />
             </div>
           </div>
 
           <div class="grid2">
             <div class="row">
-              <label id="lblC_Lot">Lot</label>
+              <label>Lot</label>
               <input id="cLot" type="number" step="0.01" placeholder="0.10" />
             </div>
             <div class="row">
-              <label id="lblC_TP">TP (optional)</label>
+              <label>TP (optional)</label>
               <input id="cTP" type="number" step="0.01" placeholder="2368.00" />
             </div>
           </div>
@@ -151,32 +149,30 @@
           <div class="panel soft">
             <div class="softRow">
               <div class="softItem">
-                <div class="label" id="lblC_Risk">Risk $ (approx)</div>
+                <div class="label">Risk $ (approx)</div>
                 <div class="value smallValue" id="cRiskUsd">$0.00</div>
               </div>
               <div class="softItem">
-                <div class="label" id="lblC_R">R (est. at 1R move)</div>
-                <div class="value smallValue" id="cREst">1.00R</div>
+                <div class="label">Note</div>
+                <div class="value smallValue">Checklist optional ✅</div>
               </div>
             </div>
-            <div class="mini" id="cRiskHint">
-              XAUUSD model: 1 lot = 100oz. Risk$ ≈ |Entry-SL| × lot × 100.
-            </div>
+            <div class="mini">XAUUSD model: 1 lot = 100oz. Risk$ ≈ |Entry-SL| × lot × 100.</div>
           </div>
 
           <div class="panel soft">
-            <div class="panelTitle" id="lblC_Items">Checklist</div>
+            <div class="panelTitle">Checklist (optional)</div>
 
-            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtTrend">Trend aligned (HTF)</span></label></div>
-            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtLevel">Key level / POI confirmed</span></label></div>
-            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtConfirm">Entry confirmation (break/shift)</span></label></div>
-            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtRR">RR is acceptable (>= 1.5R planned)</span></label></div>
-            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtNews">News risk checked</span></label></div>
-            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtMind">Mindset OK (no FOMO / revenge)</span></label></div>
-            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtPlan">Plan written (SL/TP & invalidation)</span></label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> Trend aligned (HTF)</label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> Key level / POI confirmed</label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> Entry confirmation (break/shift)</label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> RR acceptable (>= 1.5R planned)</label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> News risk checked</label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> Mindset OK (no FOMO / revenge)</label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> Plan written (SL/TP & invalidation)</label></div>
 
             <div class="row" style="margin-top:10px;">
-              <label id="lblC_Notes">Notes (optional)</label>
+              <label>Notes (optional)</label>
               <textarea id="cNotes" rows="3" placeholder="Why this setup?"></textarea>
             </div>
 
@@ -184,8 +180,6 @@
               <button class="btn" id="cAddTradeBtn" type="button">✅ Add OPEN Trade to Journal</button>
               <button class="btn ghost" id="cResetBtn" type="button">Reset</button>
             </div>
-
-            <div class="mini" id="cWarn">Tip: trade will be added as OPEN. Close it later in “Close Trade”.</div>
           </div>
         </div>
       </section>
@@ -195,15 +189,13 @@
     <section class="screen" id="screen-new">
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblNewTrade">AdigaFX • New Trade</div>
-          <div class="panelRight">
-            <span class="badge">XAUUSD</span>
-          </div>
+          <div class="panelTitle">AdigaFX • New Trade</div>
+          <div class="panelRight"><span class="badge">XAUUSD</span></div>
         </div>
 
         <div class="form">
           <div class="row">
-            <label id="lblDirection">Direction</label>
+            <label>Direction</label>
             <div class="seg" id="dirSeg">
               <button type="button" class="segBtn active" data-dir="LONG">LONG</button>
               <button type="button" class="segBtn" data-dir="SHORT">SHORT</button>
@@ -212,11 +204,11 @@
 
           <div class="grid2">
             <div class="row">
-              <label id="lblDate">Date</label>
+              <label>Date</label>
               <input id="fDate" type="date" />
             </div>
             <div class="row">
-              <label id="lblSession">Session (optional)</label>
+              <label>Session (optional)</label>
               <select id="fSession">
                 <option value="">—</option>
                 <option value="Asia">Asia</option>
@@ -228,62 +220,60 @@
 
           <div class="grid2">
             <div class="row">
-              <label id="lblEntry">Entry</label>
+              <label>Entry</label>
               <input id="fEntry" type="number" step="0.01" placeholder="2356.20" />
             </div>
             <div class="row">
-              <label id="lblSL">Stop Loss</label>
+              <label>Stop Loss</label>
               <input id="fSL" type="number" step="0.01" placeholder="2350.80" />
             </div>
           </div>
 
           <div class="grid2">
             <div class="row">
-              <label id="lblTP">Take Profit (optional)</label>
+              <label>TP (optional)</label>
               <input id="fTP" type="number" step="0.01" placeholder="2368.00" />
             </div>
             <div class="row">
-              <label id="lblLot">Lot</label>
+              <label>Lot</label>
               <input id="fLot" type="number" step="0.01" placeholder="0.10" />
             </div>
           </div>
 
           <div class="grid2">
             <div class="row">
-              <label id="lblExit">Exit (optional)</label>
+              <label>Exit (optional)</label>
               <input id="fExit" type="number" step="0.01" placeholder="If set, PnL auto" />
-              <div class="hint" id="hintExit">If you enter Exit, PnL will be auto-calculated.</div>
+              <div class="hint">If Exit is set, PnL will be auto-calculated.</div>
             </div>
             <div class="row">
-              <label id="lblPnl">PnL ($)</label>
+              <label>PnL ($)</label>
               <input id="fPnl" type="number" step="0.01" placeholder="Optional if Exit is set" />
-              <div class="hint" id="hintPnl">If Exit is empty, you can enter PnL manually.</div>
+              <div class="hint">If Exit is empty, you can enter PnL manually.</div>
             </div>
           </div>
 
           <div class="panel soft">
             <div class="softRow">
               <div class="softItem">
-                <div class="label" id="lblRiskUsd">Risk $ (approx)</div>
+                <div class="label">Risk $ (approx)</div>
                 <div class="value smallValue" id="riskUsd">$0.00</div>
               </div>
               <div class="softItem">
-                <div class="label" id="lblRMultiple">R (approx)</div>
+                <div class="label">R (approx)</div>
                 <div class="value smallValue" id="rMultiple">0.00R</div>
               </div>
             </div>
-            <div class="mini" id="hintRisk">
-              Approx model: XAUUSD 1 lot = 100oz. Risk$ ≈ |Entry-SL| × lot × 100.
-            </div>
+            <div class="mini">XAUUSD 1 lot = 100oz. Risk$ ≈ |Entry-SL| × lot × 100.</div>
           </div>
 
           <div class="row">
-            <label id="lblStrategy">Strategy (optional)</label>
+            <label>Strategy (optional)</label>
             <input id="fStrategy" placeholder="e.g. BOS + FVG" />
           </div>
 
           <div class="row">
-            <label id="lblNotes">Notes (optional)</label>
+            <label>Notes (optional)</label>
             <textarea id="fNotes" rows="3" placeholder="What happened?"></textarea>
           </div>
 
@@ -299,14 +289,12 @@
     <section class="screen" id="screen-close">
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblCloseTitle">AdigaFX • Close Trade</div>
-          <div class="panelRight">
-            <span class="badge">OPEN → CLOSED</span>
-          </div>
+          <div class="panelTitle">AdigaFX • Close Trade</div>
+          <div class="panelRight"><span class="badge">OPEN → CLOSED</span></div>
         </div>
 
         <div class="row">
-          <label id="lblClosePick">Select OPEN trade</label>
+          <label>Select OPEN trade</label>
           <button class="pickerBtn" id="closePickBtn" type="button">Tap to choose…</button>
         </div>
 
@@ -316,29 +304,28 @@
 
         <div class="grid2">
           <div class="row">
-            <label id="lblCloseExit">Exit price (recommended)</label>
+            <label>Exit price (recommended)</label>
             <input id="closeExit" type="number" step="0.01" placeholder="e.g. 2361.50" />
-            <div class="hint" id="closeExitHint">If Exit is set, PnL auto-calculates.</div>
+            <div class="hint">If Exit is set, PnL auto-calculates.</div>
           </div>
           <div class="row">
-            <label id="lblClosePnl">PnL ($) (optional)</label>
+            <label>PnL ($) (optional)</label>
             <input id="closePnl" type="number" step="0.01" placeholder="e.g. 120.00" />
-            <div class="hint" id="closePnlHint">Use only if you don’t have exit price.</div>
+            <div class="hint">Use only if you don’t have exit price.</div>
           </div>
         </div>
 
         <div class="panel soft">
           <div class="softRow">
             <div class="softItem">
-              <div class="label" id="lblCloseRisk">Risk $</div>
+              <div class="label">Risk $</div>
               <div class="value smallValue" id="closeRisk">$0.00</div>
             </div>
             <div class="softItem">
-              <div class="label" id="lblCloseR">R result</div>
+              <div class="label">R result</div>
               <div class="value smallValue" id="closeR">0.00R</div>
             </div>
           </div>
-          <div class="mini" id="closeCalcHint">Calculated from selected trade.</div>
         </div>
 
         <div class="row2">
@@ -352,7 +339,7 @@
     <section class="screen" id="screen-stats">
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblStats">AdigaFX • Stats</div>
+          <div class="panelTitle">AdigaFX • Stats</div>
           <div class="panelRight">
             <div class="seg compact" id="statsFilterSeg">
               <button type="button" class="segBtn active" data-filter="ALL">ALL</button>
@@ -362,38 +349,19 @@
         </div>
 
         <section class="cards two">
-          <div class="card">
-            <div class="label" id="lblTradesCount">Closed Trades</div>
-            <div class="value" id="sTrades">0</div>
-            <div class="mini" id="sTradesHint">Filtered</div>
-          </div>
-
-          <div class="card">
-            <div class="label" id="lblExpectancy">Expectancy</div>
-            <div class="value" id="sExp">0.00R</div>
-            <div class="mini" id="sExpHint">Avg R</div>
-          </div>
-
-          <div class="card">
-            <div class="label" id="lblBest">Best</div>
-            <div class="value" id="sBest">0.00R</div>
-            <div class="mini" id="sBestHint">Max R</div>
-          </div>
-
-          <div class="card">
-            <div class="label" id="lblWorst">Worst</div>
-            <div class="value" id="sWorst">0.00R</div>
-            <div class="mini" id="sWorstHint">Min R</div>
-          </div>
+          <div class="card"><div class="label">Closed Trades</div><div class="value" id="sTrades">0</div><div class="mini">Filtered</div></div>
+          <div class="card"><div class="label">Expectancy</div><div class="value" id="sExp">0.00R</div><div class="mini">Avg R</div></div>
+          <div class="card"><div class="label">Best</div><div class="value" id="sBest">0.00R</div><div class="mini">Max R</div></div>
+          <div class="card"><div class="label">Worst</div><div class="value" id="sWorst">0.00R</div><div class="mini">Min R</div></div>
         </section>
 
         <div class="panel soft">
-          <div class="panelTitle" id="lblRDist">R Distribution (closed)</div>
+          <div class="panelTitle">R Distribution (closed)</div>
           <canvas id="rCanvas" width="900" height="340" class="canvas"></canvas>
         </div>
 
         <div class="panel soft">
-          <div class="panelTitle" id="lblMistakes">Mistakes (from reviews)</div>
+          <div class="panelTitle">Mistakes (from reviews)</div>
           <div id="mistakeList" class="mistakes"></div>
         </div>
       </section>
@@ -403,14 +371,14 @@
     <section class="screen" id="screen-review">
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblReview">AdigaFX • Trade Review</div>
+          <div class="panelTitle">AdigaFX • Trade Review</div>
           <div class="panelRight">
             <button class="btn small ghost" id="pickLastBtn" type="button">Pick last</button>
           </div>
         </div>
 
         <div class="row">
-          <label id="lblPickTrade">Select trade</label>
+          <label>Select trade</label>
           <button class="pickerBtn" id="reviewPickBtn" type="button">Tap to choose…</button>
         </div>
 
@@ -419,7 +387,7 @@
         </div>
 
         <div class="row">
-          <label id="lblPlan">According to plan?</label>
+          <label>According to plan?</label>
           <div class="seg" id="planSeg">
             <button type="button" class="segBtn active" data-plan="YES">YES</button>
             <button type="button" class="segBtn" data-plan="NO">NO</button>
@@ -427,7 +395,7 @@
         </div>
 
         <div class="row">
-          <label id="lblMistakeType">Mistake</label>
+          <label>Mistake</label>
           <select id="mistakeType">
             <option value="">—</option>
             <option value="FOMO">FOMO</option>
@@ -441,7 +409,7 @@
         </div>
 
         <div class="row">
-          <label id="lblReviewNotes">Review notes</label>
+          <label>Review notes</label>
           <textarea id="reviewNotes" rows="4" placeholder="What will you do differently next time?"></textarea>
         </div>
 
@@ -456,7 +424,7 @@
     <section class="screen" id="screen-all">
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblAllTrades">AdigaFX • All Trades</div>
+          <div class="panelTitle">AdigaFX • All Trades</div>
           <div class="panelRight">
             <select id="allFilter">
               <option value="ALL">ALL</option>
@@ -468,11 +436,11 @@
 
         <div class="grid2">
           <div class="row">
-            <label id="lblAllSearch">Search</label>
+            <label>Search</label>
             <input id="allSearch" placeholder="date / LONG / pnl / notes…" />
           </div>
           <div class="row">
-            <label id="lblAllSort">Sort</label>
+            <label>Sort</label>
             <select id="allSort">
               <option value="NEWEST">Newest</option>
               <option value="OLDEST">Oldest</option>
@@ -497,14 +465,12 @@
     <section class="screen" id="screen-settings">
       <section class="panel">
         <div class="panelHead">
-          <div class="panelTitle" id="lblSettings">Settings</div>
-          <div class="panelRight">
-            <span class="badge">Local</span>
-          </div>
+          <div class="panelTitle">Settings</div>
+          <div class="panelRight"><span class="badge">Local</span></div>
         </div>
 
         <div class="panel soft">
-          <div class="panelTitle" id="lblDataTools">Data tools</div>
+          <div class="panelTitle">Data tools</div>
           <div class="row2">
             <button class="btn ghost" id="exportBtn" type="button">Export JSON</button>
             <label class="btn ghost fileBtn">
@@ -513,18 +479,18 @@
             </label>
           </div>
           <button class="btn danger" id="resetAllBtn" type="button">Reset all local data</button>
-          <div class="mini" id="hintReset">This only affects this device/browser.</div>
+          <div class="mini">This only affects this device/browser.</div>
         </div>
 
         <div class="panel soft">
-          <div class="panelTitle" id="lblAbout">About</div>
-          <div class="mini" id="aboutText">© AdigaFX Trade Journal • Telegram Mini App</div>
+          <div class="panelTitle">About</div>
+          <div class="mini">© AdigaFX Trade Journal • Telegram Mini App</div>
         </div>
       </section>
     </section>
 
     <footer class="foot">
-      <div class="footText" id="footerText">AdigaFX • v1 • XAUUSD</div>
+      <div class="footText">AdigaFX • v1 • XAUUSD</div>
     </footer>
   </div>
 
@@ -540,6 +506,6 @@
     <div class="modalList" id="tradeModalList"></div>
   </div>
 
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
