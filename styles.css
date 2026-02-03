@@ -426,7 +426,14 @@ body.rtl .table th, body.rtl .table td{ text-align:right; }
 }
 .sheetSearch{padding:0 6px 10px;}
 .sheetSearch input{width:100%;}
-.sheetList{max-height:55vh; overflow:auto; display:grid; gap:8px; padding:0 6px 8px;}
+.sheetList{
+  max-height:55vh;
+  overflow:auto;
+  display:grid;
+  gap:8px;
+  padding:0 6px 8px;
+  -webkit-overflow-scrolling: touch;
+}
 .sheetItem{
   border:1px solid rgba(255,255,255,.10);
   border-radius:14px;
@@ -444,4 +451,11 @@ body.rtl .table th, body.rtl .table td{ text-align:right; }
   .dashGrid{grid-template-columns:repeat(3,1fr)}
   .checkCols{grid-template-columns:1fr 1fr}
   .snapGrid{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ✅ Telegram iOS: make list items reliably tappable */
+.sheetItem{
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
 }

@@ -1,5 +1,5 @@
 /* ======================================================
-   AdigaFX Trade Journal – FULL v36
+   AdigaFX Trade Journal – FULL v37
    - Local storage only
    - XAUUSD logic: $ = (price diff) * lot * 100
    - Time filters + analytics + all trades table + delete/edit
@@ -15,7 +15,7 @@ try {
   tg?.expand();
 } catch (e) {}
 
-const STORAGE_KEY = "adigafx_trade_journal_v36";
+const STORAGE_KEY = "adigafx_trade_journal_v37";
 
 let state = {
   trades: [],
@@ -76,6 +76,9 @@ const I18N = {
     new_title:"New Trade", close_title:"Close Trade", review_title:"Review Trade", edit_title:"Edit Trade",
     label_direction:"Direction", label_date:"Date", label_session:"Session", label_entry:"Entry", label_sl:"Stop Loss", label_tp:"TP", label_tp_optional:"TP (optional)", label_lot:"Lot",
     label_setup:"Strategy / Setup", ph_setup:"e.g. Sweep + MSS", label_notes:"Notes",
+    k_total_pnl:"Total PnL", k_winrate:"Win Rate", k_avg_r:"Avg R", k_open_risk:"Open Risk",
+    k_mae_avg:"MAE Avg", k_mfe_avg:"MFE Avg", k_best_worst:"Best / Worst", k_streak:"Streak",
+    k_discipline_cost:"Discipline Cost", k_top_setup:"Top Setup",
     k_risk_usd:"Risk $:", k_r_result:"R result:",
     btn_add_open:"✅ Add OPEN trade", btn_save_open:"✅ Save OPEN",
     btn_select_open:"Select OPEN trade", btn_select_trade:"Select trade",
@@ -128,6 +131,9 @@ const I18N = {
     new_title:"עסקה חדשה", close_title:"סגירת עסקה", review_title:"סקירת עסקה", edit_title:"עריכת עסקה",
     label_direction:"כיוון", label_date:"תאריך", label_session:"סשן", label_entry:"כניסה", label_sl:"סטופ", label_tp:"טייק", label_tp_optional:"טייק (אופציונלי)", label_lot:"לוט",
     label_setup:"אסטרטגיה / סטאפ", ph_setup:"לדוגמה: Sweep + MSS", label_notes:"הערות",
+    k_total_pnl:"סה״כ PnL", k_winrate:"אחוז הצלחה", k_avg_r:"ממוצע R", k_open_risk:"סיכון פתוח",
+    k_mae_avg:"MAE ממוצע", k_mfe_avg:"MFE ממוצע", k_best_worst:"הטוב/הגרוע", k_streak:"רצף",
+    k_discipline_cost:"מחיר משמעת", k_top_setup:"סטאפ מוביל",
     k_risk_usd:"סיכון $:", k_r_result:"תוצאת R:",
     btn_add_open:"✅ הוסף עסקה פתוחה", btn_save_open:"✅ שמור כפתוחה",
     btn_select_open:"בחר עסקה פתוחה", btn_select_trade:"בחר עסקה",
@@ -183,23 +189,19 @@ function applyLanguage(){
   document.documentElement.dir = isHE ? "rtl" : "ltr";
   document.body.classList.toggle("rtl", isHE);
 
-  // text
   $$("[data-i18n]").forEach(el=>{
     const k = el.getAttribute("data-i18n");
     el.textContent = t(k);
   });
 
-  // placeholders
   $$("[data-i18n-ph]").forEach(el=>{
     const k = el.getAttribute("data-i18n-ph");
     el.setAttribute("placeholder", t(k));
   });
 
-  // Some fixed placeholders inside modal
   const sheetSearch = $("sheetSearch");
   if (sheetSearch) sheetSearch.setAttribute("placeholder", isHE ? "חיפוש..." : "Search...");
 
-  // Update any dynamic render strings
   renderDashboard();
   renderAllTrades();
   renderSnapshot();
@@ -238,7 +240,6 @@ function getSegValue(containerId, valueKey, fallback){
   const b = document.querySelector(`#${containerId} .segBtn.active`);
   return b?.dataset[valueKey] ?? fallback;
 }
-
 function wireSeg(containerId, valueKey, onChange){
   const el = $(containerId);
   if (!el) return;
@@ -271,13 +272,11 @@ wireSeg("eDirSeg","dir", ()=> updateEditDerived());
 ========================= */
 function filteredTrades(){
   if (state.period === "ALL") return state.trades.slice();
-
   const min =
     state.period === "TODAY" ? todayStr() :
     state.period === "WEEK" ? daysAgo(6) :
     state.period === "MONTH" ? daysAgo(29) :
     "0000-01-01";
-
   return state.trades.filter(t => (t.date || "0000-01-01") >= min);
 }
 function filteredClosed(){ return filteredTrades().filter(t=>t.status==="CLOSED"); }
@@ -304,7 +303,7 @@ function updateChecklistRisk(){
 ["cEntry","cSL","cLot"].forEach(id=> $(id).addEventListener("input", updateChecklistRisk));
 
 /* =========================
-   Modal selector
+   Modal selector (Telegram iOS FIX)
 ========================= */
 const modal = $("tradeModal");
 const sheetClose = $("sheetClose");
@@ -315,6 +314,38 @@ const sheetList = $("sheetList");
 let modalPickResolve = null;
 let modalItems = [];
 
+function closeModal(){
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden","true");
+  modalPickResolve = null;
+  modalItems = [];
+}
+
+sheetClose.onclick = closeModal;
+
+// close only if tapping overlay (not the sheet)
+modal.addEventListener("pointerup", (e)=>{
+  if (e.target === modal) closeModal();
+});
+modal.addEventListener("touchend", (e)=>{
+  if (e.target === modal) closeModal();
+}, {passive:true});
+
+// event delegation: reliable on Telegram iOS
+function handlePickFromEvent(e){
+  const item = e.target.closest(".sheetItem");
+  if (!item) return;
+
+  const id = Number(item.dataset.id);
+  const picked = modalItems.find(x=>x.id===id) || null;
+
+  closeModal();
+  if (modalPickResolve) modalPickResolve(picked);
+}
+
+sheetList.addEventListener("pointerup", handlePickFromEvent);
+sheetList.addEventListener("touchend", handlePickFromEvent, {passive:true});
+
 function openModal(title, items, renderLine){
   modalItems = items.slice();
   sheetTitle.textContent = title;
@@ -324,7 +355,7 @@ function openModal(title, items, renderLine){
   modal.setAttribute("aria-hidden","false");
 
   const rerender = ()=>{
-    const q = sheetSearch.value.toLowerCase().trim();
+    const q = (sheetSearch.value || "").toLowerCase().trim();
     const list = modalItems.filter(t=>{
       if (!q) return true;
       const hay = [
@@ -335,7 +366,10 @@ function openModal(title, items, renderLine){
     });
 
     sheetList.innerHTML = list.map(tr=>{
-      const right = tr.status==="CLOSED" ? pillPnL(tr.pnl||0) : `<span class="pill warn">${t("open")}</span>`;
+      const right = tr.status==="CLOSED"
+        ? pillPnL(tr.pnl||0)
+        : `<span class="pill warn">${t("open")}</span>`;
+
       return `
         <div class="sheetItem" data-id="${tr.id}">
           <div class="sheetItemTop">
@@ -346,15 +380,6 @@ function openModal(title, items, renderLine){
         </div>
       `;
     }).join("");
-
-    $$("#sheetList .sheetItem").forEach(el=>{
-      el.onclick = ()=>{
-        const id = Number(el.dataset.id);
-        const picked = modalItems.find(x=>x.id===id) || null;
-        closeModal();
-        if (modalPickResolve) modalPickResolve(picked);
-      };
-    });
   };
 
   sheetSearch.oninput = rerender;
@@ -362,15 +387,6 @@ function openModal(title, items, renderLine){
 
   return new Promise(resolve => { modalPickResolve = resolve; });
 }
-
-function closeModal(){
-  modal.classList.remove("open");
-  modal.setAttribute("aria-hidden","true");
-  modalPickResolve = null;
-}
-
-sheetClose.onclick = closeModal;
-modal.addEventListener("click",(e)=>{ if (e.target === modal) closeModal(); });
 
 function pillPnL(v){
   if (state.hidePnl) return `<span class="pill neu">${t("hidden")}</span>`;
@@ -592,7 +608,7 @@ $("saveReviewBtn").onclick = ()=>{
 
   saveState();
 
-  // reset review to empty default (כמו שביקשת)
+  // reset review to empty default
   reviewTradeId = null;
   $("reviewMeta").textContent = "";
   $("rPlan").value = "YES";
@@ -741,7 +757,6 @@ $("saveEditBtn").onclick = ()=>{
 
   saveState();
 
-  // reset edit
   editingTradeId = null;
   $("editMeta").textContent = "";
 
@@ -759,12 +774,12 @@ function sessionAgg(closed){
     NY:{pnl:0,n:0,w:0,rSum:0},
     Unknown:{pnl:0,n:0,w:0,rSum:0}
   };
-  closed.forEach(t=>{
-    const s = (t.session==="Asia"||t.session==="London"||t.session==="NY") ? t.session : "Unknown";
-    map[s].pnl += (t.pnl||0);
+  closed.forEach(t0=>{
+    const s = (t0.session==="Asia"||t0.session==="London"||t0.session==="NY") ? t0.session : "Unknown";
+    map[s].pnl += (t0.pnl||0);
     map[s].n += 1;
-    if ((t.pnl||0) > 0) map[s].w += 1;
-    map[s].rSum += (t.r||0);
+    if ((t0.pnl||0) > 0) map[s].w += 1;
+    map[s].rSum += (t0.r||0);
   });
   Object.values(map).forEach(o=>{
     o.wr = o.n ? Math.round((o.w/o.n)*100) : 0;
@@ -775,15 +790,15 @@ function sessionAgg(closed){
 
 function topSetupAgg(closed){
   const m = new Map();
-  closed.forEach(t=>{
-    const key = (t.strategy||"").trim() || "";
+  closed.forEach(t0=>{
+    const key = (t0.strategy||"").trim() || "";
     if (!key) return;
     if (!m.has(key)) m.set(key, {name:key, pnl:0, n:0, w:0, rSum:0});
     const o = m.get(key);
-    o.pnl += (t.pnl||0);
+    o.pnl += (t0.pnl||0);
     o.n += 1;
-    if ((t.pnl||0) > 0) o.w += 1;
-    o.rSum += (t.r||0);
+    if ((t0.pnl||0) > 0) o.w += 1;
+    o.rSum += (t0.r||0);
   });
   const arr = Array.from(m.values()).map(o=>({
     ...o, wr: o.n ? Math.round((o.w/o.n)*100) : 0, avgR: o.n ? o.rSum/o.n : 0
@@ -797,8 +812,8 @@ function streakInfo(closed){
   let bestW=0,bestL=0;
   let runType=null,runLen=0;
 
-  arr.forEach(t=>{
-    const type = (t.pnl||0) >= 0 ? "W" : "L";
+  arr.forEach(t0=>{
+    const type = (t0.pnl||0) >= 0 ? "W" : "L";
     if (type === runType) runLen++;
     else { runType = type; runLen = 1; }
     if (type==="W") bestW = Math.max(bestW, runLen);
@@ -816,13 +831,13 @@ function streakInfo(closed){
 }
 
 function disciplineStats(closed){
-  const bad = closed.filter(t => (t.review?.plan==="NO") || (t.review?.mistakeType));
-  const cost = bad.reduce((a,t)=> a + (t.pnl||0), 0);
+  const bad = closed.filter(t0 => (t0.review?.plan==="NO") || (t0.review?.mistakeType));
+  const cost = bad.reduce((a,t0)=> a + (t0.pnl||0), 0);
 
   const byType = {};
-  bad.forEach(t=>{
-    const k = t.review?.mistakeType || (t.review?.plan==="NO" ? "Plan NO" : "Other");
-    byType[k] = (byType[k]||0) + (t.pnl||0);
+  bad.forEach(t0=>{
+    const k = t0.review?.mistakeType || (t0.review?.plan==="NO" ? "Plan NO" : "Other");
+    byType[k] = (byType[k]||0) + (t0.pnl||0);
   });
   const top = Object.entries(byType).sort((a,b)=> b[1]-a[1])[0];
   return {cost, n: bad.length, topType: top ? top[0] : "—"};
@@ -835,10 +850,9 @@ function renderDashboard(){
   const closed = filteredClosed();
   const open = filteredOpen();
 
-  // totals
-  const totalPnL = closed.reduce((a,t)=>a+(t.pnl||0),0);
-  const wins = closed.filter(t=>(t.pnl||0)>0).length;
-  const losses = closed.filter(t=>(t.pnl||0)<0).length;
+  const totalPnL = closed.reduce((a,t0)=>a+(t0.pnl||0),0);
+  const wins = closed.filter(t0=>(t0.pnl||0)>0).length;
+  const losses = closed.filter(t0=>(t0.pnl||0)<0).length;
   const winRate = closed.length ? Math.round((wins/closed.length)*100) : 0;
 
   $("statPnl").textContent = fmtMoney(totalPnL);
@@ -847,24 +861,23 @@ function renderDashboard(){
   $("statWinRate").textContent = `${winRate}%`;
   $("statWins").textContent = `${wins}W / ${losses}L`;
 
-  const avgR = closed.reduce((a,t)=>a+(t.r||0),0) / (closed.length||1);
+  const avgR = closed.reduce((a,t0)=>a+(t0.r||0),0) / (closed.length||1);
   $("statAvgR").textContent = avgR.toFixed(2)+"R";
   $("statAvgRMeta").textContent = `${closed.length} ${state.language==="HE" ? "עסקאות" : "trades"}`;
 
-  const openRisk = open.reduce((a,t)=>a+(t.risk||0),0);
+  const openRisk = open.reduce((a,t0)=>a+(t0.risk||0),0);
   $("statOpenRisk").textContent = fmtMoney(openRisk);
   $("statOpenCount").textContent = `${open.length} ${state.language==="HE" ? "פתוחות" : "open"}`;
 
-  const maeAvg = closed.reduce((a,t)=>a+(t.mae||0),0)/(closed.length||1);
-  const mfeAvg = closed.reduce((a,t)=>a+(t.mfe||0),0)/(closed.length||1);
+  const maeAvg = closed.reduce((a,t0)=>a+(t0.mae||0),0)/(closed.length||1);
+  const mfeAvg = closed.reduce((a,t0)=>a+(t0.mfe||0),0)/(closed.length||1);
   $("statMaeAvg").textContent = fmtMoney(maeAvg);
   $("statMfeAvg").textContent = fmtMoney(mfeAvg);
 
-  const best = closed.length ? Math.max(...closed.map(t=>t.pnl||0)) : 0;
-  const worst = closed.length ? Math.min(...closed.map(t=>t.pnl||0)) : 0;
+  const best = closed.length ? Math.max(...closed.map(t0=>t0.pnl||0)) : 0;
+  const worst = closed.length ? Math.min(...closed.map(t0=>t0.pnl||0)) : 0;
   $("statBestWorst").textContent = `${fmtMoney(best)} / ${fmtMoney(worst)}`;
 
-  // streak
   const st = streakInfo(closed);
   if (!closed.length){
     $("statStreak").textContent = "—";
@@ -874,12 +887,10 @@ function renderDashboard(){
     $("statStreakMeta").textContent = `Best W${st.bestW} / Best L${st.bestL}`;
   }
 
-  // discipline
   const ds = disciplineStats(closed);
   $("statDiscipline").textContent = fmtMoney(ds.cost);
   $("statDisciplineMeta").textContent = ds.n ? `${ds.n} • ${ds.topType}` : "0";
 
-  // top setup
   const setups = topSetupAgg(closed);
   if (!setups.length){
     $("statTopSetup").textContent = "—";
@@ -890,7 +901,6 @@ function renderDashboard(){
     $("statTopSetupHint").textContent = `${fmtMoney(s.pnl)} • ${s.n} • ${s.wr}% • ${s.avgR.toFixed(2)}R`;
   }
 
-  // sessions
   const sess = sessionAgg(closed);
   function setSess(pnlId, metaId, key){
     const o = sess[key];
@@ -902,18 +912,17 @@ function renderDashboard(){
   setSess("sessNY","sessNYMeta","NY");
   setSess("sessU","sessUMeta","Unknown");
 
-  // recent closed list
   const recent = closed.slice().sort((a,b)=> (b.closedAt||b.id)-(a.closedAt||a.id)).slice(0,6);
-  $("tradesList").innerHTML = recent.length ? recent.map(tTrade=>{
+  $("tradesList").innerHTML = recent.length ? recent.map(t0=>{
     return `
       <div class="item">
         <div class="itemTop">
-          <span>${esc(tTrade.date)} • ${esc(tTrade.direction)} • ${esc(tTrade.session||t("unknown"))}</span>
-          <span>${esc(fmtMoney(tTrade.pnl||0))}</span>
+          <span>${esc(t0.date)} • ${esc(t0.direction)} • ${esc(t0.session||t("unknown"))}</span>
+          <span>${esc(fmtMoney(t0.pnl||0))}</span>
         </div>
-        <div class="kv"><span class="k">${esc(t("label_setup"))}:</span> <span class="v">${esc(tTrade.strategy||"—")}</span></div>
-        <div class="kv"><span class="k">${esc(t("label_entry"))}/${esc(t("label_exit"))}:</span> <span class="v">${tTrade.entry.toFixed(2)} → ${tTrade.exit!=null ? tTrade.exit.toFixed(2) : "—"}</span></div>
-        <div class="kv"><span class="k">R:</span> <span class="v">${(tTrade.r||0).toFixed(2)}R</span> • <span class="k">MAE:</span> <span class="v">${esc(fmtMoney(tTrade.mae||0))}</span> • <span class="k">MFE:</span> <span class="v">${esc(fmtMoney(tTrade.mfe||0))}</span></div>
+        <div class="kv"><span class="k">${esc(t("label_setup"))}:</span> <span class="v">${esc(t0.strategy||"—")}</span></div>
+        <div class="kv"><span class="k">${esc(t("label_entry"))}/${esc(t("label_exit"))}:</span> <span class="v">${t0.entry.toFixed(2)} → ${t0.exit!=null ? t0.exit.toFixed(2) : "—"}</span></div>
+        <div class="kv"><span class="k">R:</span> <span class="v">${(t0.r||0).toFixed(2)}R</span> • <span class="k">MAE:</span> <span class="v">${esc(fmtMoney(t0.mae||0))}</span> • <span class="k">MFE:</span> <span class="v">${esc(fmtMoney(t0.mfe||0))}</span></div>
       </div>
     `;
   }).join("") : `<div class="kv">${esc(t("msg_no_closed"))}</div>`;
@@ -978,7 +987,7 @@ function renderAllTrades(){
 }
 
 window.__deleteTrade = function(id){
-  state.trades = state.trades.filter(t=>t.id!==id);
+  state.trades = state.trades.filter(t0=>t0.id!==id);
   saveState();
   renderDashboard();
   renderAllTrades();
@@ -1030,7 +1039,6 @@ $("exportJsonBtn").onclick = async ()=>{
     $("importMsg").textContent = t("msg_export_ok");
   }catch(e){
     $("importMsg").textContent = t("msg_export_fail");
-    // fallback: put into textarea for manual copy
     $("importJsonText").value = json;
   }
 };
@@ -1052,7 +1060,7 @@ $("importMergeBtn").onclick = ()=>{
   try{
     const obj = JSON.parse(($("importJsonText").value||"").trim());
     const incoming = Array.isArray(obj.trades) ? obj.trades : [];
-    const ids = new Set(state.trades.map(t=>t.id));
+    const ids = new Set(state.trades.map(t0=>t0.id));
     incoming.forEach(tr => { if (!ids.has(tr.id)) state.trades.push(tr); });
     saveState();
     $("importMsg").textContent = t("msg_merge_ok");
@@ -1070,7 +1078,6 @@ $("resetAllBtn").onclick = ()=>{
   }
 };
 
-/* language seg */
 function setLangSeg(){
   $$("#langSeg .segBtn").forEach(b=>{
     b.classList.toggle("active", b.dataset.lang === state.language);
@@ -1095,16 +1102,16 @@ function renderSnapshot(){
   const closed = filteredClosed();
   const open = filteredOpen();
 
-  const totalPnL = closed.reduce((a,t)=>a+(t.pnl||0),0);
-  const wins = closed.filter(t=>(t.pnl||0)>0).length;
+  const totalPnL = closed.reduce((a,t0)=>a+(t0.pnl||0),0);
+  const wins = closed.filter(t0=>(t0.pnl||0)>0).length;
   const winRate = closed.length ? Math.round((wins/closed.length)*100) : 0;
-  const avgR = closed.reduce((a,t)=>a+(t.r||0),0)/(closed.length||1);
+  const avgR = closed.reduce((a,t0)=>a+(t0.r||0),0)/(closed.length||1);
 
-  const maeAvg = closed.reduce((a,t)=>a+(t.mae||0),0)/(closed.length||1);
-  const mfeAvg = closed.reduce((a,t)=>a+(t.mfe||0),0)/(closed.length||1);
+  const maeAvg = closed.reduce((a,t0)=>a+(t0.mae||0),0)/(closed.length||1);
+  const mfeAvg = closed.reduce((a,t0)=>a+(t0.mfe||0),0)/(closed.length||1);
 
-  const best = closed.length ? Math.max(...closed.map(t=>t.pnl||0)) : 0;
-  const worst = closed.length ? Math.min(...closed.map(t=>t.pnl||0)) : 0;
+  const best = closed.length ? Math.max(...closed.map(t0=>t0.pnl||0)) : 0;
+  const worst = closed.length ? Math.min(...closed.map(t0=>t0.pnl||0)) : 0;
 
   const st = streakInfo(closed);
   const ds = disciplineStats(closed);
@@ -1113,7 +1120,7 @@ function renderSnapshot(){
 
   $("snapPeriod").textContent = `${t("tab_snapshot")} • ${state.period}`;
 
-  const openRisk = open.reduce((a,t)=>a+(t.risk||0),0);
+  const openRisk = open.reduce((a,t0)=>a+(t0.risk||0),0);
 
   const kpis = [
     [t("k_total_pnl"), fmtMoney(totalPnL)],
@@ -1155,17 +1162,12 @@ function renderSnapshot(){
    Init
 ========================= */
 (function init(){
-  // default dates
   $("fDate").value = $("fDate").value || todayStr();
   $("cDate").value = $("cDate").value || todayStr();
 
-  // initial risk previews
   updateNewRisk();
   updateChecklistRisk();
 
-  // apply language (also triggers renders)
   applyLanguage();
-
-  // initial screen
   showScreen("dash");
 })();
