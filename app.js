@@ -1,11 +1,14 @@
 /* ======================================================
-   AdigaFX Trade Journal – FULL v37
-   - Local storage only
-   - XAUUSD logic: $ = (price diff) * lot * 100
-   - Time filters + analytics + all trades table + delete/edit
+   AdigaFX Trade Journal – FULL v38
+   - LocalStorage only
+   - XAUUSD: $ = (price diff) * lot * 100
+   - Dashboard gadgets: sessions, top setup, discipline cost, streak, MAE/MFE, best/worst
    - Checklist optional (no requirement)
-   - Settings: Export/Import/Reset, Hide PnL, Language EN/HE (RTL)
-   - Share Snapshot screen (screenshot)
+   - Close trade: Native dropdown picker (Telegram iOS safe)
+   - Review/Edit: Native dropdown pickers
+   - All trades: table + delete + jump-to-edit
+   - Settings: Export/Import/Reset, Language EN/HE (RTL), Hide PnL (default OFF)
+   - Snapshot screen: user takes screenshot to share
    Built by FaShuSh for AdigaFX
 ====================================================== */
 
@@ -15,13 +18,13 @@ try {
   tg?.expand();
 } catch (e) {}
 
-const STORAGE_KEY = "adigafx_trade_journal_v37";
+const STORAGE_KEY = "adigafx_trade_journal_v38";
 
 let state = {
   trades: [],
   hidePnl: false,
-  language: "EN",     // EN | HE
-  period: "ALL"       // ALL | TODAY | WEEK | MONTH
+  language: "EN",   // EN | HE
+  period: "ALL"     // ALL | TODAY | WEEK | MONTH
 };
 
 try {
@@ -33,22 +36,18 @@ const $ = (id) => document.getElementById(id);
 const $$ = (q) => Array.from(document.querySelectorAll(q));
 
 function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-
 function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
-
 function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysAgo(n){ const d = new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
 
-function daysAgo(n){
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0,10);
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  })[m]);
 }
 
-function fmtMoney(v){
-  if (state.hidePnl) return t("hidden");
-  return "$" + (Number(v)||0).toFixed(2);
-}
 function fmtMoneyRaw(v){ return "$" + (Number(v)||0).toFixed(2); }
+function fmtMoney(v){ return state.hidePnl ? t("hidden") : fmtMoneyRaw(v); }
 
 function calcRisk(entry, sl, lot){ return Math.abs(entry - sl) * lot * 100; }
 function calcPnL(dir, entry, exit, lot){
@@ -56,12 +55,6 @@ function calcPnL(dir, entry, exit, lot){
   return diff * lot * 100;
 }
 function calcR(pnl, risk){ return risk ? (pnl / risk) : 0; }
-
-function esc(s){
-  return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  })[m]);
-}
 
 /* =========================
    i18n
@@ -73,6 +66,7 @@ const I18N = {
     time_all:"ALL", time_today:"TODAY", time_week:"WEEK", time_month:"MONTH",
     overview_title:"Overview", sessions_title:"Sessions", recent_title:"Recent (filtered)", all_title:"All Trades (filtered)",
     checklist_title:"Pre-Trade Checklist (optional)", checklist_box_title:"Checklist (NOT required)", checklist_box_hint:"Leave unchecked if you want — still saves.",
+    c_trend:"Trend aligned", c_level:"Key level", c_confirm:"Confirmation", c_rr:"RR OK", c_news:"News checked", c_mindset:"Mindset OK",
     new_title:"New Trade", close_title:"Close Trade", review_title:"Review Trade", edit_title:"Edit Trade",
     label_direction:"Direction", label_date:"Date", label_session:"Session", label_entry:"Entry", label_sl:"Stop Loss", label_tp:"TP", label_tp_optional:"TP (optional)", label_lot:"Lot",
     label_setup:"Strategy / Setup", ph_setup:"e.g. Sweep + MSS", label_notes:"Notes",
@@ -118,8 +112,8 @@ const I18N = {
     msg_import_ok:"Imported ✅",
     msg_import_bad:"Invalid JSON ❌",
     msg_merge_ok:"Merged ✅",
-    msg_deleted:"Deleted ✅",
-    msg_share_tip:"Take a screenshot of this screen and share it ✅"
+    msg_share_tip:"Take a screenshot of this screen and share it ✅",
+    choose_trade:"Choose a trade..."
   },
 
   HE: {
@@ -128,6 +122,7 @@ const I18N = {
     time_all:"הכל", time_today:"היום", time_week:"שבוע", time_month:"חודש",
     overview_title:"סיכום", sessions_title:"סשנים", recent_title:"אחרונים (מסונן)", all_title:"כל העסקאות (מסונן)",
     checklist_title:"צ׳ק ליסט לפני כניסה (אופציונלי)", checklist_box_title:"צ׳ק ליסט (לא חובה)", checklist_box_hint:"אפשר להשאיר לא מסומן — עדיין נשמר.",
+    c_trend:"עם הטרנד", c_level:"רמה חשובה", c_confirm:"אישור", c_rr:"RR תקין", c_news:"בדיקת חדשות", c_mindset:"מיינדסט",
     new_title:"עסקה חדשה", close_title:"סגירת עסקה", review_title:"סקירת עסקה", edit_title:"עריכת עסקה",
     label_direction:"כיוון", label_date:"תאריך", label_session:"סשן", label_entry:"כניסה", label_sl:"סטופ", label_tp:"טייק", label_tp_optional:"טייק (אופציונלי)", label_lot:"לוט",
     label_setup:"אסטרטגיה / סטאפ", ph_setup:"לדוגמה: Sweep + MSS", label_notes:"הערות",
@@ -173,8 +168,8 @@ const I18N = {
     msg_import_ok:"יובא בהצלחה ✅",
     msg_import_bad:"JSON לא תקין ❌",
     msg_merge_ok:"מוזג בהצלחה ✅",
-    msg_deleted:"נמחק ✅",
-    msg_share_tip:"צלם מסך של הדף הזה ושתף ✅"
+    msg_share_tip:"צלם מסך של הדף הזה ושתף ✅",
+    choose_trade:"בחר עסקה..."
   }
 };
 
@@ -199,8 +194,12 @@ function applyLanguage(){
     el.setAttribute("placeholder", t(k));
   });
 
-  const sheetSearch = $("sheetSearch");
-  if (sheetSearch) sheetSearch.setAttribute("placeholder", isHE ? "חיפוש..." : "Search...");
+  setSegActive("langSeg","lang", state.language);
+  setSegActive("timeSeg","time", state.period);
+
+  fillClosePicker();
+  fillReviewPicker();
+  fillEditPicker();
 
   renderDashboard();
   renderAllTrades();
@@ -217,6 +216,9 @@ function showScreen(route){
   if (route === "dash") renderDashboard();
   if (route === "all") renderAllTrades();
   if (route === "snapshot") renderSnapshot();
+  if (route === "close") fillClosePicker();
+  if (route === "review") fillReviewPicker();
+  if (route === "edit") fillEditPicker();
 }
 
 $$(".tab").forEach(btn => btn.addEventListener("click", ()=>showScreen(btn.dataset.route)));
@@ -267,6 +269,14 @@ wireSeg("dirSeg","dir", ()=> updateNewRisk());
 wireSeg("cDirSeg","dir", ()=> updateChecklistRisk());
 wireSeg("eDirSeg","dir", ()=> updateEditDerived());
 
+/* language seg */
+wireSeg("langSeg","lang",(val)=>{
+  state.language = val;
+  saveState();
+  applyLanguage();
+});
+setSegActive("langSeg","lang", state.language);
+
 /* =========================
    Filtering
 ========================= */
@@ -277,10 +287,10 @@ function filteredTrades(){
     state.period === "WEEK" ? daysAgo(6) :
     state.period === "MONTH" ? daysAgo(29) :
     "0000-01-01";
-  return state.trades.filter(t => (t.date || "0000-01-01") >= min);
+  return state.trades.filter(t0 => (t0.date || "0000-01-01") >= min);
 }
-function filteredClosed(){ return filteredTrades().filter(t=>t.status==="CLOSED"); }
-function filteredOpen(){ return filteredTrades().filter(t=>t.status==="OPEN"); }
+function filteredClosed(){ return filteredTrades().filter(t0=>t0.status==="CLOSED"); }
+function filteredOpen(){ return filteredTrades().filter(t0=>t0.status==="OPEN"); }
 
 /* =========================
    Risk previews
@@ -303,97 +313,14 @@ function updateChecklistRisk(){
 ["cEntry","cSL","cLot"].forEach(id=> $(id).addEventListener("input", updateChecklistRisk));
 
 /* =========================
-   Modal selector (Telegram iOS FIX)
+   Small UI helpers
 ========================= */
-const modal = $("tradeModal");
-const sheetClose = $("sheetClose");
-const sheetTitle = $("sheetTitle");
-const sheetSearch = $("sheetSearch");
-const sheetList = $("sheetList");
-
-let modalPickResolve = null;
-let modalItems = [];
-
-function closeModal(){
-  modal.classList.remove("open");
-  modal.setAttribute("aria-hidden","true");
-  modalPickResolve = null;
-  modalItems = [];
-}
-
-sheetClose.onclick = closeModal;
-
-// close only if tapping overlay (not the sheet)
-modal.addEventListener("pointerup", (e)=>{
-  if (e.target === modal) closeModal();
-});
-modal.addEventListener("touchend", (e)=>{
-  if (e.target === modal) closeModal();
-}, {passive:true});
-
-// event delegation: reliable on Telegram iOS
-function handlePickFromEvent(e){
-  const item = e.target.closest(".sheetItem");
-  if (!item) return;
-
-  const id = Number(item.dataset.id);
-  const picked = modalItems.find(x=>x.id===id) || null;
-
-  closeModal();
-  if (modalPickResolve) modalPickResolve(picked);
-}
-
-sheetList.addEventListener("pointerup", handlePickFromEvent);
-sheetList.addEventListener("touchend", handlePickFromEvent, {passive:true});
-
-function openModal(title, items, renderLine){
-  modalItems = items.slice();
-  sheetTitle.textContent = title;
-  sheetSearch.value = "";
-  sheetList.innerHTML = "";
-  modal.classList.add("open");
-  modal.setAttribute("aria-hidden","false");
-
-  const rerender = ()=>{
-    const q = (sheetSearch.value || "").toLowerCase().trim();
-    const list = modalItems.filter(t=>{
-      if (!q) return true;
-      const hay = [
-        t.date, t.status, t.direction, t.session, t.strategy,
-        (t.review?.mistakeType||""), (t.review?.mistake||""), (t.review?.notes||"")
-      ].join(" ").toLowerCase();
-      return hay.includes(q);
-    });
-
-    sheetList.innerHTML = list.map(tr=>{
-      const right = tr.status==="CLOSED"
-        ? pillPnL(tr.pnl||0)
-        : `<span class="pill warn">${t("open")}</span>`;
-
-      return `
-        <div class="sheetItem" data-id="${tr.id}">
-          <div class="sheetItemTop">
-            <span>${esc(tr.direction)} • ${esc(tr.status)}</span>
-            <span>${right}</span>
-          </div>
-          <div class="sheetItemSub">${renderLine(tr)}</div>
-        </div>
-      `;
-    }).join("");
-  };
-
-  sheetSearch.oninput = rerender;
-  rerender();
-
-  return new Promise(resolve => { modalPickResolve = resolve; });
-}
-
 function pillPnL(v){
-  if (state.hidePnl) return `<span class="pill neu">${t("hidden")}</span>`;
+  if (state.hidePnl) return `<span class="pill neu">${esc(t("hidden"))}</span>`;
   const n = Number(v)||0;
-  if (n > 0) return `<span class="pill ok">+${fmtMoneyRaw(n)}</span>`;
-  if (n < 0) return `<span class="pill bad">-${fmtMoneyRaw(Math.abs(n))}</span>`;
-  return `<span class="pill neu">${fmtMoneyRaw(0)}</span>`;
+  if (n > 0) return `<span class="pill ok">+${esc(fmtMoneyRaw(n))}</span>`;
+  if (n < 0) return `<span class="pill bad">-${esc(fmtMoneyRaw(Math.abs(n)))}</span>`;
+  return `<span class="pill neu">${esc(fmtMoneyRaw(0))}</span>`;
 }
 
 /* =========================
@@ -419,10 +346,8 @@ $("cAddTradeBtn").onclick = ()=>{
     pnl: 0,
     risk: calcRisk(entry, sl, lot),
     r: 0,
-    mae: 0,
-    mfe: 0,
-    maePrice: null,
-    mfePrice: null,
+    mae: 0, mfe: 0,
+    maePrice: null, mfePrice: null,
     strategy: "",
     notes: $("cNotes").value || "",
     checklist: $$(".cBox").map(b=>!!b.checked),
@@ -431,6 +356,9 @@ $("cAddTradeBtn").onclick = ()=>{
 
   state.trades.push(trade);
   saveState();
+  fillClosePicker();
+  fillReviewPicker();
+  fillEditPicker();
   renderDashboard();
   showScreen("dash");
 };
@@ -455,10 +383,8 @@ $("saveTradeBtn").onclick = ()=>{
     pnl: 0,
     risk: calcRisk(entry, sl, lot),
     r: 0,
-    mae: 0,
-    mfe: 0,
-    maePrice: null,
-    mfePrice: null,
+    mae: 0, mfe: 0,
+    maePrice: null, mfePrice: null,
     strategy: ($("fStrategy").value||"").trim(),
     notes: $("fNotes").value || "",
     review: {}
@@ -466,48 +392,79 @@ $("saveTradeBtn").onclick = ()=>{
 
   state.trades.push(trade);
   saveState();
+  fillClosePicker();
+  fillReviewPicker();
+  fillEditPicker();
   renderDashboard();
   showScreen("dash");
 };
 
 /* =========================
-   Close trade
+   CLOSE: Native Dropdown picker (iOS safe)
 ========================= */
 let closingTradeId = null;
 
-$("closePickBtn").onclick = async ()=>{
+function fillClosePicker(){
+  const sel = $("closePickSelect");
+  if (!sel) return;
+
   const openTrades = filteredOpen().slice().sort((a,b)=>b.id-a.id);
-  if (!openTrades.length){ alert(t("msg_pick_open")); return; }
+  if (!openTrades.length){
+    sel.innerHTML = `<option value="">${esc(t("msg_pick_open"))}</option>`;
+    closingTradeId = null;
+    $("closeMeta").textContent = "";
+    $("closeRiskUsd").textContent = fmtMoney(0);
+    updateCloseDerived();
+    return;
+  }
 
-  const picked = await openModal(
-    t("btn_select_open"),
-    openTrades,
-    (tr)=> `${esc(tr.date)} • ${esc(tr.session||t("unknown"))} • ${t("label_entry")}: ${tr.entry.toFixed(2)} • ${t("label_sl")}: ${tr.sl.toFixed(2)} • ${t("label_lot")}: ${tr.lot}`
-  );
+  sel.innerHTML = `
+    <option value="">${esc(t("choose_trade"))}</option>
+    ${openTrades.map(tr=>{
+      const line = `${tr.date} • ${tr.direction} • ${(tr.session||t("unknown"))} • Entry ${tr.entry.toFixed(2)} • SL ${tr.sl.toFixed(2)} • Lot ${tr.lot}`;
+      return `<option value="${tr.id}">${esc(line)}</option>`;
+    }).join("")}
+  `;
+}
 
-  if (!picked) return;
-  closingTradeId = picked.id;
-  $("closeMeta").textContent = `${picked.date} • ${picked.direction} • ${picked.session||t("unknown")} • Entry ${picked.entry.toFixed(2)} • SL ${picked.sl.toFixed(2)} • Lot ${picked.lot}`;
-  $("closeRiskUsd").textContent = fmtMoney(picked.risk || calcRisk(picked.entry,picked.sl,picked.lot));
+function setClosingTrade(id){
+  const tr = state.trades.find(x=>x.id===id);
+  if (!tr){
+    closingTradeId = null;
+    $("closeMeta").textContent = "";
+    $("closeRiskUsd").textContent = fmtMoney(0);
+    updateCloseDerived();
+    return;
+  }
+
+  closingTradeId = tr.id;
+  $("closeMeta").textContent = `${tr.date} • ${tr.direction} • ${(tr.session||t("unknown"))} • Entry ${tr.entry.toFixed(2)} • SL ${tr.sl.toFixed(2)} • Lot ${tr.lot}`;
+  $("closeRiskUsd").textContent = fmtMoney(tr.risk || calcRisk(tr.entry,tr.sl,tr.lot));
   updateCloseDerived();
-};
+}
+
+$("closePickSelect").addEventListener("change",(e)=>{
+  const id = Number(e.target.value);
+  if (!id) setClosingTrade(null);
+  else setClosingTrade(id);
+});
 
 function updateCloseDerived(){
-  const tTrade = state.trades.find(x=>x.id===closingTradeId);
-  if (!tTrade){
+  const tr = state.trades.find(x=>x.id===closingTradeId);
+  if (!tr){
     $("closeMAEUsd").textContent = fmtMoney(0);
     $("closeMFEUsd").textContent = fmtMoney(0);
     $("closeR").textContent = "0.00R";
     return;
   }
 
-  const risk = tTrade.risk || calcRisk(tTrade.entry,tTrade.sl,tTrade.lot);
+  const risk = tr.risk || calcRisk(tr.entry,tr.sl,tr.lot);
 
   const maeP = num($("closeMAE").value);
   const mfeP = num($("closeMFE").value);
 
-  const maeUsd = (maeP!=null) ? Math.abs(tTrade.entry - maeP) * tTrade.lot * 100 : 0;
-  const mfeUsd = (mfeP!=null) ? Math.abs(mfeP - tTrade.entry) * tTrade.lot * 100 : 0;
+  const maeUsd = (maeP!=null) ? Math.abs(tr.entry - maeP) * tr.lot * 100 : 0;
+  const mfeUsd = (mfeP!=null) ? Math.abs(mfeP - tr.entry) * tr.lot * 100 : 0;
 
   $("closeMAEUsd").textContent = fmtMoney(maeUsd);
   $("closeMFEUsd").textContent = fmtMoney(mfeUsd);
@@ -516,7 +473,7 @@ function updateCloseDerived(){
   const pnlManual = num($("closePnl").value);
 
   let pnl = null;
-  if (exit!=null) pnl = calcPnL(tTrade.direction, tTrade.entry, exit, tTrade.lot);
+  if (exit!=null) pnl = calcPnL(tr.direction, tr.entry, exit, tr.lot);
   else if (pnlManual!=null) pnl = pnlManual;
 
   const r = pnl==null ? 0 : calcR(pnl, risk);
@@ -526,39 +483,40 @@ function updateCloseDerived(){
 ["closeExit","closePnl","closeMAE","closeMFE"].forEach(id=> $(id).addEventListener("input", updateCloseDerived));
 
 $("closeTradeBtn").onclick = ()=>{
-  const tTrade = state.trades.find(x=>x.id===closingTradeId);
-  if (!tTrade){ alert(t("msg_pick_first")); return; }
+  const tr = state.trades.find(x=>x.id===closingTradeId);
+  if (!tr){ alert(t("msg_pick_first")); return; }
 
   const exit = num($("closeExit").value);
   const pnlManual = num($("closePnl").value);
   if (exit==null && pnlManual==null){ alert(t("msg_need_exit_or_pnl")); return; }
 
-  const risk = tTrade.risk || calcRisk(tTrade.entry,tTrade.sl,tTrade.lot);
+  const risk = tr.risk || calcRisk(tr.entry,tr.sl,tr.lot);
 
   if (exit!=null){
-    tTrade.exit = exit;
-    tTrade.pnl = calcPnL(tTrade.direction, tTrade.entry, exit, tTrade.lot);
+    tr.exit = exit;
+    tr.pnl = calcPnL(tr.direction, tr.entry, exit, tr.lot);
   } else {
-    tTrade.exit = null;
-    tTrade.pnl = pnlManual;
+    tr.exit = null;
+    tr.pnl = pnlManual;
   }
 
-  tTrade.status = "CLOSED";
-  tTrade.risk = risk;
-  tTrade.r = calcR(tTrade.pnl||0, risk);
-  tTrade.closedAt = Date.now();
+  tr.status = "CLOSED";
+  tr.risk = risk;
+  tr.r = calcR(tr.pnl||0, risk);
+  tr.closedAt = Date.now();
 
   const maeP = num($("closeMAE").value);
   const mfeP = num($("closeMFE").value);
-  tTrade.maePrice = maeP;
-  tTrade.mfePrice = mfeP;
-  tTrade.mae = (maeP!=null) ? Math.abs(tTrade.entry - maeP) * tTrade.lot * 100 : 0;
-  tTrade.mfe = (mfeP!=null) ? Math.abs(mfeP - tTrade.entry) * tTrade.lot * 100 : 0;
+  tr.maePrice = maeP;
+  tr.mfePrice = mfeP;
+  tr.mae = (maeP!=null) ? Math.abs(tr.entry - maeP) * tr.lot * 100 : 0;
+  tr.mfe = (mfeP!=null) ? Math.abs(mfeP - tr.entry) * tr.lot * 100 : 0;
 
   saveState();
 
-  // reset UI to default
+  // reset UI
   closingTradeId = null;
+  $("closePickSelect").value = "";
   $("closeMeta").textContent = "";
   ["closeExit","closePnl","closeMAE","closeMFE"].forEach(id=> $(id).value = "");
   $("closeMAEUsd").textContent = fmtMoney(0);
@@ -566,34 +524,55 @@ $("closeTradeBtn").onclick = ()=>{
   $("closeR").textContent = "0.00R";
   $("closeRiskUsd").textContent = fmtMoney(0);
 
+  fillClosePicker();
+  fillReviewPicker();
+  fillEditPicker();
   renderDashboard();
   showScreen("dash");
 };
 
 /* =========================
-   Review trade
+   REVIEW: Native Dropdown picker
 ========================= */
 let reviewTradeId = null;
 
-$("reviewPickBtn").onclick = async ()=>{
+function fillReviewPicker(){
+  const sel = $("reviewPickSelect");
+  if (!sel) return;
+
   const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id) - (a.closedAt||a.id));
-  if (!list.length){ alert(t("msg_pick_trade")); return; }
+  if (!list.length){
+    sel.innerHTML = `<option value="">${esc(t("msg_pick_trade"))}</option>`;
+    reviewTradeId = null;
+    $("reviewMeta").textContent = "";
+    return;
+  }
 
-  const picked = await openModal(
-    t("btn_select_trade"),
-    list,
-    (tr)=> `${esc(tr.date)} • ${esc(tr.status)} • ${esc(tr.session||t("unknown"))} • ${esc(tr.strategy||"—")} • ${tr.status==="CLOSED" ? fmtMoney(tr.pnl||0) : t("open")}`
-  );
-  if (!picked) return;
+  sel.innerHTML = `
+    <option value="">${esc(t("choose_trade"))}</option>
+    ${list.map(tr=>{
+      const pnlPart = tr.status==="CLOSED" ? ` • ${fmtMoneyRaw(tr.pnl||0)}` : "";
+      const line = `${tr.date} • ${tr.status} • ${tr.direction} • ${(tr.session||t("unknown"))}${pnlPart}`;
+      return `<option value="${tr.id}">${esc(line)}</option>`;
+    }).join("")}
+  `;
+}
 
-  reviewTradeId = picked.id;
-  $("reviewMeta").textContent = `${picked.date} • ${picked.direction} • ${picked.session||t("unknown")} • ${picked.status} • ${picked.status==="CLOSED" ? fmtMoney(picked.pnl||0) : ""}`;
+$("reviewPickSelect").addEventListener("change",(e)=>{
+  const id = Number(e.target.value);
+  if (!id){ reviewTradeId = null; $("reviewMeta").textContent=""; return; }
 
-  $("rPlan").value = picked.review?.plan || "YES";
-  $("rMistakeType").value = picked.review?.mistakeType || "";
-  $("rMistake").value = picked.review?.mistake || "";
-  $("rReviewNotes").value = picked.review?.notes || "";
-};
+  const tr = state.trades.find(x=>x.id===id);
+  if (!tr) return;
+
+  reviewTradeId = tr.id;
+  $("reviewMeta").textContent = `${tr.date} • ${tr.direction} • ${(tr.session||t("unknown"))} • ${tr.status} ${tr.status==="CLOSED" ? ("• "+fmtMoney(tr.pnl||0)) : ""}`;
+
+  $("rPlan").value = tr.review?.plan || "YES";
+  $("rMistakeType").value = tr.review?.mistakeType || "";
+  $("rMistake").value = tr.review?.mistake || "";
+  $("rReviewNotes").value = tr.review?.notes || "";
+});
 
 $("saveReviewBtn").onclick = ()=>{
   const tr = state.trades.find(x=>x.id===reviewTradeId);
@@ -608,8 +587,9 @@ $("saveReviewBtn").onclick = ()=>{
 
   saveState();
 
-  // reset review to empty default
+  // reset review UI
   reviewTradeId = null;
+  $("reviewPickSelect").value = "";
   $("reviewMeta").textContent = "";
   $("rPlan").value = "YES";
   $("rMistakeType").value = "";
@@ -617,46 +597,68 @@ $("saveReviewBtn").onclick = ()=>{
   $("rReviewNotes").value = "";
 
   renderDashboard();
+  renderAllTrades();
+  renderSnapshot();
   showScreen("dash");
 };
 
 /* =========================
-   Edit trade
+   EDIT: Native Dropdown picker
 ========================= */
 let editingTradeId = null;
 
-$("editPickBtn").onclick = async ()=>{
+function fillEditPicker(){
+  const sel = $("editPickSelect");
+  if (!sel) return;
+
   const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id) - (a.closedAt||a.id));
-  if (!list.length){ alert(t("msg_pick_trade")); return; }
+  if (!list.length){
+    sel.innerHTML = `<option value="">${esc(t("msg_pick_trade"))}</option>`;
+    editingTradeId = null;
+    $("editMeta").textContent = "";
+    return;
+  }
 
-  const picked = await openModal(
-    t("btn_select_trade"),
-    list,
-    (tr)=> `${esc(tr.date)} • ${esc(tr.status)} • ${esc(tr.direction)} • ${esc(tr.session||t("unknown"))} • ${esc(tr.strategy||"—")}`
-  );
-  if (!picked) return;
+  sel.innerHTML = `
+    <option value="">${esc(t("choose_trade"))}</option>
+    ${list.map(tr=>{
+      const line = `${tr.date} • ${tr.status} • ${tr.direction} • ${(tr.session||t("unknown"))} • ${(tr.strategy||"—")}`;
+      return `<option value="${tr.id}">${esc(line)}</option>`;
+    }).join("")}
+  `;
+}
 
-  editingTradeId = picked.id;
-  $("editMeta").textContent = `${picked.date} • ${picked.direction} • ${picked.session||t("unknown")} • id ${picked.id}`;
+$("editPickSelect").addEventListener("change",(e)=>{
+  const id = Number(e.target.value);
+  if (!id){ editingTradeId=null; $("editMeta").textContent=""; return; }
+  loadTradeIntoEdit(id);
+});
 
-  $("eStatus").value = picked.status;
-  setSegActive("eDirSeg","dir", picked.direction);
+function loadTradeIntoEdit(id){
+  const tr = state.trades.find(x=>x.id===id);
+  if (!tr) return;
 
-  $("eDate").value = picked.date || todayStr();
-  $("eSession").value = picked.session || "";
-  $("eEntry").value = picked.entry ?? "";
-  $("eSL").value = picked.sl ?? "";
-  $("eTP").value = picked.tp ?? "";
-  $("eLot").value = picked.lot ?? "";
-  $("eExit").value = picked.exit ?? "";
-  $("ePnl").value = (picked.exit==null ? (picked.pnl ?? "") : "");
-  $("eMAE").value = picked.maePrice ?? "";
-  $("eMFE").value = picked.mfePrice ?? "";
-  $("eStrategy").value = picked.strategy || "";
-  $("eNotes").value = picked.notes || "";
+  editingTradeId = tr.id;
+  $("editMeta").textContent = `${tr.date} • ${tr.direction} • ${(tr.session||t("unknown"))} • id ${tr.id}`;
+
+  $("eStatus").value = tr.status;
+  setSegActive("eDirSeg","dir", tr.direction);
+
+  $("eDate").value = tr.date || todayStr();
+  $("eSession").value = tr.session || "";
+  $("eEntry").value = tr.entry ?? "";
+  $("eSL").value = tr.sl ?? "";
+  $("eTP").value = tr.tp ?? "";
+  $("eLot").value = tr.lot ?? "";
+  $("eExit").value = tr.exit ?? "";
+  $("ePnl").value = (tr.exit==null ? (tr.pnl ?? "") : "");
+  $("eMAE").value = tr.maePrice ?? "";
+  $("eMFE").value = tr.mfePrice ?? "";
+  $("eStrategy").value = tr.strategy || "";
+  $("eNotes").value = tr.notes || "";
 
   updateEditDerived();
-};
+}
 
 function updateEditDerived(){
   const tr = state.trades.find(x=>x.id===editingTradeId);
@@ -743,6 +745,7 @@ $("saveEditBtn").onclick = ()=>{
     tr.exit = null;
     tr.pnl = 0;
     tr.r = 0;
+    tr.closedAt = null;
   }
 
   const maeP = num($("eMAE").value);
@@ -757,10 +760,12 @@ $("saveEditBtn").onclick = ()=>{
 
   saveState();
 
-  editingTradeId = null;
-  $("editMeta").textContent = "";
-
   renderDashboard();
+  renderAllTrades();
+  renderSnapshot();
+  fillClosePicker();
+  fillReviewPicker();
+  fillEditPicker();
   showScreen("dash");
 };
 
@@ -791,7 +796,7 @@ function sessionAgg(closed){
 function topSetupAgg(closed){
   const m = new Map();
   closed.forEach(t0=>{
-    const key = (t0.strategy||"").trim() || "";
+    const key = (t0.strategy||"").trim();
     if (!key) return;
     if (!m.has(key)) m.set(key, {name:key, pnl:0, n:0, w:0, rSum:0});
     const o = m.get(key);
@@ -969,7 +974,7 @@ function renderAllTrades(){
         <td>${esc(fmtMoney(tr.mfe||0))}</td>
         <td>${esc(reviewLine||"—")}</td>
         <td class="actions">
-          <button class="miniBtn" onclick="window.__editFromAll(${tr.id})">${esc(t("tab_edit"))}</button>
+          <button class="miniBtn" onclick="window.__jumpEdit(${tr.id})">${esc(t("tab_edit"))}</button>
           <button class="miniBtn danger" onclick="window.__deleteTrade(${tr.id})">${esc(state.language==="HE"?"מחק":"Delete")}</button>
         </td>
       </tr>
@@ -989,35 +994,19 @@ function renderAllTrades(){
 window.__deleteTrade = function(id){
   state.trades = state.trades.filter(t0=>t0.id!==id);
   saveState();
+  fillClosePicker();
+  fillReviewPicker();
+  fillEditPicker();
   renderDashboard();
   renderAllTrades();
+  renderSnapshot();
 };
 
-window.__editFromAll = function(id){
-  const tr = state.trades.find(x=>x.id===id);
-  if (!tr) return;
+window.__jumpEdit = function(id){
   showScreen("edit");
-
-  editingTradeId = tr.id;
-  $("editMeta").textContent = `${tr.date} • ${tr.direction} • ${tr.session||t("unknown")} • id ${tr.id}`;
-
-  $("eStatus").value = tr.status;
-  setSegActive("eDirSeg","dir", tr.direction);
-
-  $("eDate").value = tr.date || todayStr();
-  $("eSession").value = tr.session || "";
-  $("eEntry").value = tr.entry ?? "";
-  $("eSL").value = tr.sl ?? "";
-  $("eTP").value = tr.tp ?? "";
-  $("eLot").value = tr.lot ?? "";
-  $("eExit").value = tr.exit ?? "";
-  $("ePnl").value = (tr.exit==null ? (tr.pnl ?? "") : "");
-  $("eMAE").value = tr.maePrice ?? "";
-  $("eMFE").value = tr.mfePrice ?? "";
-  $("eStrategy").value = tr.strategy || "";
-  $("eNotes").value = tr.notes || "";
-
-  updateEditDerived();
+  fillEditPicker();
+  $("editPickSelect").value = String(id);
+  loadTradeIntoEdit(id);
 };
 
 /* =========================
@@ -1077,19 +1066,6 @@ $("resetAllBtn").onclick = ()=>{
     location.reload();
   }
 };
-
-function setLangSeg(){
-  $$("#langSeg .segBtn").forEach(b=>{
-    b.classList.toggle("active", b.dataset.lang === state.language);
-  });
-}
-wireSeg("langSeg","lang",(val)=>{
-  state.language = val;
-  saveState();
-  setLangSeg();
-  applyLanguage();
-});
-setLangSeg();
 
 /* =========================
    Snapshot
@@ -1169,5 +1145,9 @@ function renderSnapshot(){
   updateChecklistRisk();
 
   applyLanguage();
+  fillClosePicker();
+  fillReviewPicker();
+  fillEditPicker();
+
   showScreen("dash");
 })();

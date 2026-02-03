@@ -6,7 +6,7 @@
   <title>AdigaFX Trade Journal</title>
 
   <link rel="icon" href="adigafx_icon.png"/>
-  <link rel="stylesheet" href="styles.css?v=37"/>
+  <link rel="stylesheet" href="styles.css?v=38"/>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -17,7 +17,7 @@
       <div class="brand">
         <img src="adigafx_logo_128.png" class="logo" alt="AdigaFX"/>
         <div>
-          <div class="title">AdigaFX</div>
+          <div class="title">AdigaFX <span class="ver">v38</span></div>
           <div class="subtitle" data-i18n="subtitle">XAUUSD • Trade Journal (Local)</div>
         </div>
       </div>
@@ -246,7 +246,11 @@
       <div class="panel">
         <div class="panelTitle" data-i18n="close_title">Close Trade</div>
 
-        <button class="btn ghost" id="closePickBtn" type="button" data-i18n="btn_select_open">Select OPEN trade</button>
+        <div class="row">
+          <label data-i18n="btn_select_open">Select OPEN trade</label>
+          <select id="closePickSelect"></select>
+        </div>
+
         <div class="kv" id="closeMeta"></div>
 
         <div class="grid2">
@@ -289,7 +293,11 @@
       <div class="panel">
         <div class="panelTitle" data-i18n="review_title">Review Trade</div>
 
-        <button class="btn ghost" id="reviewPickBtn" type="button" data-i18n="btn_select_trade">Select trade</button>
+        <div class="row">
+          <label data-i18n="btn_select_trade">Select trade</label>
+          <select id="reviewPickSelect"></select>
+        </div>
+
         <div class="kv" id="reviewMeta"></div>
 
         <div class="form">
@@ -341,7 +349,11 @@
       <div class="panel">
         <div class="panelTitle" data-i18n="edit_title">Edit Trade</div>
 
-        <button class="btn ghost" id="editPickBtn" type="button" data-i18n="btn_select_trade">Select trade</button>
+        <div class="row">
+          <label data-i18n="btn_select_trade">Select trade</label>
+          <select id="editPickSelect"></select>
+        </div>
+
         <div class="kv" id="editMeta"></div>
 
         <div class="form">
@@ -464,7 +476,7 @@
 
     <!-- SNAPSHOT -->
     <section class="screen" id="screen-snapshot">
-      <div class="panel snapshot">
+      <div class="panel snapshot" id="snapshotCard">
         <div class="snapHeader">
           <div class="snapBrand">
             <div class="snapTitle">AdigaFX</div>
@@ -481,7 +493,7 @@
         </div>
 
         <div class="snapFooter">
-          <span data-i18n="credit">Built by FaShuSh for AdigaFX</span> • v37
+          <span data-i18n="credit">Built by FaShuSh for AdigaFX</span> • v38
         </div>
       </div>
 
@@ -504,20 +516,6 @@
     </footer>
   </div>
 
-  <!-- Modal selector container -->
-  <div class="modal" id="tradeModal" aria-hidden="true">
-    <div class="sheet" role="dialog" aria-modal="true">
-      <div class="sheetTop">
-        <div class="sheetTitle" id="sheetTitle">Select trade</div>
-        <button class="sheetClose" id="sheetClose" type="button">Close</button>
-      </div>
-      <div class="sheetSearch">
-        <input id="sheetSearch" placeholder="Search..."/>
-      </div>
-      <div class="sheetList" id="sheetList"></div>
-    </div>
-  </div>
-
-  <script src="app.js?v=37"></script>
+  <script src="app.js?v=38"></script>
 </body>
 </html>

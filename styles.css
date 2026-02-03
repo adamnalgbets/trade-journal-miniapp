@@ -44,9 +44,9 @@ body::after{
 body.rtl{direction:rtl;}
 body.rtl .tabs{direction:rtl;}
 body.rtl .itemTop{flex-direction:row-reverse;}
-body.rtl .sheetItemTop{flex-direction:row-reverse;}
 body.rtl .snapHeader{flex-direction:row-reverse;}
 body.rtl .snapSessRow{flex-direction:row-reverse;}
+body.rtl .ver{ margin-left:0; margin-right:8px; }
 
 .app{
   position:relative;
@@ -71,6 +71,19 @@ body.rtl .snapSessRow{flex-direction:row-reverse;}
 }
 .title{font-size:18px;font-weight:900}
 .subtitle{font-size:12px;color:var(--muted)}
+
+.ver{
+  display:inline-block;
+  margin-left:8px;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.75);
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.02em;
+}
 
 /* Tabs */
 .tabs{
@@ -229,9 +242,6 @@ textarea{resize:vertical;min-height:80px}
 .maeTitle{font-weight:900;font-size:13px}
 .maeText{margin-top:6px;font-size:13px;color:var(--muted)}
 .maeArt{margin-top:6px;font-size:12px;color:rgba(255,255,255,.75)}
-.green{color:var(--ok)}
-.red{color:var(--danger)}
-.yellow{color:var(--warn)}
 
 /* Checklist columns */
 .checkCols{
@@ -351,7 +361,6 @@ textarea{resize:vertical;min-height:80px}
   white-space:nowrap;
 }
 body.rtl .table th, body.rtl .table td{ text-align:right; }
-
 .table th{
   position:sticky; top:0;
   background:rgba(5,8,22,.92);
@@ -375,9 +384,7 @@ body.rtl .table th, body.rtl .table td{ text-align:right; }
 .pill.neu{border-color:rgba(45,212,191,.25); color:rgba(45,212,191,.95)}
 .pill.warn{border-color:rgba(251,191,36,.25); color:rgba(251,191,36,.95)}
 
-.table .actions{
-  display:flex; gap:8px;
-}
+.table .actions{display:flex; gap:8px;}
 .miniBtn{
   padding:8px 10px;
   border-radius:12px;
@@ -393,69 +400,10 @@ body.rtl .table th, body.rtl .table td{ text-align:right; }
   color:rgba(251,113,133,.95);
 }
 
-/* ===== Modal selector ===== */
-.modal{
-  position:fixed; inset:0;
-  background:rgba(0,0,0,.55);
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
-  z-index:9999;
-}
-.modal.open{display:flex;}
-.sheet{
-  width:min(560px, 100%);
-  background:rgba(15,23,42,.95);
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:18px 18px 0 0;
-  padding:12px;
-  padding-bottom:16px;
-}
-.sheetTop{
-  display:flex; justify-content:space-between; align-items:center; gap:10px;
-  padding:6px 6px 10px;
-}
-.sheetTitle{font-weight:900;}
-.sheetClose{
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.04);
-  color:var(--text);
-  border-radius:12px;
-  padding:8px 10px;
-  font-weight:900;
-}
-.sheetSearch{padding:0 6px 10px;}
-.sheetSearch input{width:100%;}
-.sheetList{
-  max-height:55vh;
-  overflow:auto;
-  display:grid;
-  gap:8px;
-  padding:0 6px 8px;
-  -webkit-overflow-scrolling: touch;
-}
-.sheetItem{
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:14px;
-  background:rgba(255,255,255,.03);
-  padding:10px;
-}
-.sheetItemTop{
-  display:flex; justify-content:space-between; gap:10px; font-weight:900;
-}
-.sheetItemSub{margin-top:4px; color:rgba(255,255,255,.65); font-size:12px;}
-
 /* Desktop tweaks */
 @media(min-width:520px){
   .grid2{grid-template-columns:1fr 1fr}
   .dashGrid{grid-template-columns:repeat(3,1fr)}
   .checkCols{grid-template-columns:1fr 1fr}
   .snapGrid{grid-template-columns:repeat(3,1fr)}
-}
-
-/* ✅ Telegram iOS: make list items reliably tappable */
-.sheetItem{
-  cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
 }
