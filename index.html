@@ -6,7 +6,7 @@
   <title>AdigaFX Trade Journal</title>
 
   <link rel="icon" href="adigafx_icon.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=10" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -33,6 +33,7 @@
       <button class="tab" data-route="close" id="tabClose">Close Trade</button>
       <button class="tab" data-route="stats" id="tabStats">Stats</button>
       <button class="tab" data-route="review" id="tabReview">Review</button>
+      <button class="tab" data-route="all" id="tabAll">All Trades</button>
       <button class="tab" data-route="settings" id="tabSettings">Settings</button>
     </nav>
 
@@ -166,27 +167,13 @@
           <div class="panel soft">
             <div class="panelTitle" id="lblC_Items">Checklist</div>
 
-            <div class="checkItem">
-              <label><input type="checkbox" class="cBox" id="cbTrend" /> <span id="txtTrend">Trend aligned (HTF)</span></label>
-            </div>
-            <div class="checkItem">
-              <label><input type="checkbox" class="cBox" id="cbLevel" /> <span id="txtLevel">Key level / POI confirmed</span></label>
-            </div>
-            <div class="checkItem">
-              <label><input type="checkbox" class="cBox" id="cbConfirm" /> <span id="txtConfirm">Entry confirmation (break/shift)</span></label>
-            </div>
-            <div class="checkItem">
-              <label><input type="checkbox" class="cBox" id="cbRR" /> <span id="txtRR">RR is acceptable (>= 1.5R planned)</span></label>
-            </div>
-            <div class="checkItem">
-              <label><input type="checkbox" class="cBox" id="cbNews" /> <span id="txtNews">News risk checked</span></label>
-            </div>
-            <div class="checkItem">
-              <label><input type="checkbox" class="cBox" id="cbMind" /> <span id="txtMind">Mindset OK (no FOMO / revenge)</span></label>
-            </div>
-            <div class="checkItem">
-              <label><input type="checkbox" class="cBox" id="cbPlan" /> <span id="txtPlan">Plan written (SL/TP & invalidation)</span></label>
-            </div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtTrend">Trend aligned (HTF)</span></label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtLevel">Key level / POI confirmed</span></label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtConfirm">Entry confirmation (break/shift)</span></label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtRR">RR is acceptable (>= 1.5R planned)</span></label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtNews">News risk checked</span></label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtMind">Mindset OK (no FOMO / revenge)</span></label></div>
+            <div class="checkItem"><label><input type="checkbox" class="cBox" /> <span id="txtPlan">Plan written (SL/TP & invalidation)</span></label></div>
 
             <div class="row" style="margin-top:10px;">
               <label id="lblC_Notes">Notes (optional)</label>
@@ -308,7 +295,7 @@
       </section>
     </section>
 
-    <!-- CLOSE TRADE -->
+    <!-- CLOSE -->
     <section class="screen" id="screen-close">
       <section class="panel">
         <div class="panelHead">
@@ -465,6 +452,47 @@
       </section>
     </section>
 
+    <!-- ALL TRADES -->
+    <section class="screen" id="screen-all">
+      <section class="panel">
+        <div class="panelHead">
+          <div class="panelTitle" id="lblAllTrades">AdigaFX • All Trades</div>
+          <div class="panelRight">
+            <select id="allFilter">
+              <option value="ALL">ALL</option>
+              <option value="OPEN">OPEN</option>
+              <option value="CLOSED">CLOSED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label id="lblAllSearch">Search</label>
+            <input id="allSearch" placeholder="date / LONG / pnl / notes…" />
+          </div>
+          <div class="row">
+            <label id="lblAllSort">Sort</label>
+            <select id="allSort">
+              <option value="NEWEST">Newest</option>
+              <option value="OLDEST">Oldest</option>
+              <option value="PNL_DESC">PnL (high→low)</option>
+              <option value="PNL_ASC">PnL (low→high)</option>
+              <option value="R_DESC">R (high→low)</option>
+              <option value="R_ASC">R (low→high)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row2">
+          <button class="btn ghost" id="exportCsvBtn" type="button">Export CSV</button>
+          <button class="btn ghost" id="exportJsonBtn2" type="button">Export JSON</button>
+        </div>
+
+        <div id="allTradesList" class="list"></div>
+      </section>
+    </section>
+
     <!-- SETTINGS -->
     <section class="screen" id="screen-settings">
       <section class="panel">
@@ -490,7 +518,7 @@
 
         <div class="panel soft">
           <div class="panelTitle" id="lblAbout">About</div>
-          <div class="mini" id="aboutText">© AdigaFX Trade Journal • Private Telegram Mini App</div>
+          <div class="mini" id="aboutText">© AdigaFX Trade Journal • Telegram Mini App</div>
         </div>
       </section>
     </section>
@@ -512,6 +540,6 @@
     <div class="modalList" id="tradeModalList"></div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
