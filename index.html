@@ -2,108 +2,330 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Trade Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AdigaFX Trade Journal</title>
+
+  <link rel="icon" href="adigafx_icon.png" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
   <div class="app">
+    <!-- Header -->
     <header class="top">
-      <div>
-        <h1>Dashboard</h1>
-        <p class="sub">XAUUSD only (v1)</p>
+      <div class="brand">
+        <img class="logo" src="adigafx_logo_128.png" alt="AdigaFX" />
+        <div class="brandText">
+          <div class="title" id="appTitle">AdigaFX • Dashboard</div>
+          <div class="subtitle" id="appSubtitle">XAUUSD only • Local storage</div>
+        </div>
       </div>
-      <button id="langBtn" class="chip">EN</button>
+
+      <button class="chip" id="langBtn" title="Toggle language">EN</button>
     </header>
 
-    <section class="cards">
-      <div class="card">
-        <div class="label">Total P&amp;L</div>
-        <div class="value" id="totalPnl">$0.00</div>
-      </div>
-      <div class="card">
-        <div class="label">Win Rate</div>
-        <div class="value" id="winRate">0%</div>
-      </div>
-      <div class="card">
-        <div class="label">Avg R</div>
-        <div class="value" id="avgR">0.00R</div>
-      </div>
-    </section>
+    <!-- Tabs -->
+    <nav class="tabs" aria-label="Navigation">
+      <button class="tab active" data-route="dash" id="tabDash">Dashboard</button>
+      <button class="tab" data-route="new" id="tabNew">New Trade</button>
+      <button class="tab" data-route="stats" id="tabStats">Stats</button>
+      <button class="tab" data-route="review" id="tabReview">Review</button>
+      <button class="tab" data-route="settings" id="tabSettings">Settings</button>
+    </nav>
 
-    <section class="panel">
-      <div class="panelTitle">Quick Actions</div>
-      <div class="actions">
-        <button class="btn" id="newTradeBtn">➕ New Trade</button>
-        <button class="btn ghost" id="statsBtn">📊 Stats</button>
-        <button class="btn ghost" id="reviewBtn">🧠 Review</button>
-      </div>
-    </section>
-
-    <!-- New Trade Screen -->
-    <section class="panel" id="newTradePanel" style="display:none;">
-      <div class="panelTitle">New Trade</div>
-
-      <div class="form">
-        <div class="row">
-          <label>Symbol</label>
-          <input id="fSymbol" value="XAUUSD" disabled />
+    <!-- DASH -->
+    <section class="screen active" id="screen-dash">
+      <section class="cards">
+        <div class="card">
+          <div class="label" id="lblTotalPnl">Total P&L</div>
+          <div class="value" id="totalPnl">$0.00</div>
+          <div class="mini" id="pnlHint">All-time</div>
         </div>
 
-        <div class="row">
-          <label>Direction</label>
-          <div class="seg">
-            <button type="button" class="segBtn active" data-dir="LONG">LONG</button>
-            <button type="button" class="segBtn" data-dir="SHORT">SHORT</button>
+        <div class="card">
+          <div class="label" id="lblWinRate">Win Rate</div>
+          <div class="value" id="winRate">0%</div>
+          <div class="mini" id="winHint">Closed trades</div>
+        </div>
+
+        <div class="card">
+          <div class="label" id="lblAvgR">Avg R</div>
+          <div class="value" id="avgR">0.00R</div>
+          <div class="mini" id="avgHint">Closed trades</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panelHead">
+          <div class="panelTitle" id="lblEquityCurve">AdigaFX • Equity Curve</div>
+          <div class="panelRight">
+            <span class="badge" id="eqModeBadge">ALL</span>
+          </div>
+        </div>
+        <canvas id="equityCanvas" width="900" height="340" class="canvas"></canvas>
+      </section>
+
+      <section class="panel">
+        <div class="panelHead">
+          <div class="panelTitle" id="lblTrades">Trades</div>
+          <div class="panelRight">
+            <button class="btn small ghost" id="addDemoBtn">Add demo</button>
+          </div>
+        </div>
+
+        <div id="tradesList" class="list"></div>
+
+        <div class="row2">
+          <button class="btn ghost" id="goNewBtn">➕ New Trade</button>
+          <button class="btn ghost" id="goStatsBtn">📊 Stats</button>
+        </div>
+      </section>
+    </section>
+
+    <!-- NEW -->
+    <section class="screen" id="screen-new">
+      <section class="panel">
+        <div class="panelHead">
+          <div class="panelTitle" id="lblNewTrade">AdigaFX • New Trade</div>
+          <div class="panelRight">
+            <span class="badge">XAUUSD</span>
+          </div>
+        </div>
+
+        <div class="form">
+          <div class="row">
+            <label id="lblDirection">Direction</label>
+            <div class="seg" id="dirSeg">
+              <button type="button" class="segBtn active" data-dir="LONG">LONG</button>
+              <button type="button" class="segBtn" data-dir="SHORT">SHORT</button>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="row">
+              <label id="lblDate">Date</label>
+              <input id="fDate" type="date" />
+            </div>
+            <div class="row">
+              <label id="lblSession">Session (optional)</label>
+              <select id="fSession">
+                <option value="">—</option>
+                <option value="Asia">Asia</option>
+                <option value="London">London</option>
+                <option value="NY">NY</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="row">
+              <label id="lblEntry">Entry</label>
+              <input id="fEntry" type="number" step="0.01" placeholder="2356.20" />
+            </div>
+            <div class="row">
+              <label id="lblSL">Stop Loss</label>
+              <input id="fSL" type="number" step="0.01" placeholder="2350.80" />
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="row">
+              <label id="lblTP">Take Profit (optional)</label>
+              <input id="fTP" type="number" step="0.01" placeholder="2368.00" />
+            </div>
+            <div class="row">
+              <label id="lblLot">Lot</label>
+              <input id="fLot" type="number" step="0.01" placeholder="0.10" />
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="row">
+              <label id="lblExit">Exit (optional)</label>
+              <input id="fExit" type="number" step="0.01" placeholder="If set, PnL auto" />
+              <div class="hint" id="hintExit">If you enter Exit, PnL will be auto-calculated.</div>
+            </div>
+            <div class="row">
+              <label id="lblPnl">PnL ($)</label>
+              <input id="fPnl" type="number" step="0.01" placeholder="Optional if Exit is set" />
+              <div class="hint" id="hintPnl">If Exit is empty, you can enter PnL manually.</div>
+            </div>
+          </div>
+
+          <div class="panel soft">
+            <div class="softRow">
+              <div class="softItem">
+                <div class="label" id="lblRiskUsd">Risk $ (approx)</div>
+                <div class="value smallValue" id="riskUsd">$0.00</div>
+              </div>
+              <div class="softItem">
+                <div class="label" id="lblRMultiple">R (approx)</div>
+                <div class="value smallValue" id="rMultiple">0.00R</div>
+              </div>
+            </div>
+            <div class="mini" id="hintRisk">
+              Approx model: XAUUSD 1 lot = 100oz. Risk$ ≈ |Entry-SL| × lot × 100.
+            </div>
+          </div>
+
+          <div class="row">
+            <label id="lblStrategy">Strategy (optional)</label>
+            <input id="fStrategy" placeholder="e.g. BOS + FVG" />
+          </div>
+
+          <div class="row">
+            <label id="lblNotes">Notes (optional)</label>
+            <textarea id="fNotes" rows="3" placeholder="What happened?"></textarea>
+          </div>
+
+          <div class="row2">
+            <button class="btn" id="saveTradeBtn">✅ Save Trade</button>
+            <button class="btn ghost" id="resetFormBtn">Reset</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- STATS -->
+    <section class="screen" id="screen-stats">
+      <section class="panel">
+        <div class="panelHead">
+          <div class="panelTitle" id="lblStats">AdigaFX • Stats</div>
+          <div class="panelRight">
+            <div class="seg compact" id="statsFilterSeg">
+              <button type="button" class="segBtn active" data-filter="ALL">ALL</button>
+              <button type="button" class="segBtn" data-filter="MONTH">MONTH</button>
+            </div>
+          </div>
+        </div>
+
+        <section class="cards two">
+          <div class="card">
+            <div class="label" id="lblTradesCount">Trades</div>
+            <div class="value" id="sTrades">0</div>
+            <div class="mini" id="sTradesHint">Filtered</div>
+          </div>
+
+          <div class="card">
+            <div class="label" id="lblExpectancy">Expectancy</div>
+            <div class="value" id="sExp">0.00R</div>
+            <div class="mini" id="sExpHint">Avg R</div>
+          </div>
+
+          <div class="card">
+            <div class="label" id="lblBest">Best</div>
+            <div class="value" id="sBest">0.00R</div>
+            <div class="mini" id="sBestHint">Max R</div>
+          </div>
+
+          <div class="card">
+            <div class="label" id="lblWorst">Worst</div>
+            <div class="value" id="sWorst">0.00R</div>
+            <div class="mini" id="sWorstHint">Min R</div>
+          </div>
+        </section>
+
+        <div class="panel soft">
+          <div class="panelTitle" id="lblRDist">R Distribution</div>
+          <canvas id="rCanvas" width="900" height="340" class="canvas"></canvas>
+        </div>
+
+        <div class="panel soft">
+          <div class="panelTitle" id="lblMistakes">Mistakes</div>
+          <div id="mistakeList" class="mistakes"></div>
+        </div>
+      </section>
+    </section>
+
+    <!-- REVIEW -->
+    <section class="screen" id="screen-review">
+      <section class="panel">
+        <div class="panelHead">
+          <div class="panelTitle" id="lblReview">AdigaFX • Trade Review</div>
+          <div class="panelRight">
+            <button class="btn small ghost" id="pickLastBtn">Pick last</button>
           </div>
         </div>
 
         <div class="row">
-          <label>Date</label>
-          <input id="fDate" type="date" />
+          <label id="lblPickTrade">Select trade</label>
+          <select id="reviewSelect"></select>
+        </div>
+
+        <div class="panel soft">
+          <div class="mini" id="reviewMeta">No trade selected.</div>
         </div>
 
         <div class="row">
-          <label>Entry</label>
-          <input id="fEntry" type="number" step="0.01" placeholder="e.g. 2356.20" />
+          <label id="lblPlan">According to plan?</label>
+          <div class="seg" id="planSeg">
+            <button type="button" class="segBtn active" data-plan="YES">YES</button>
+            <button type="button" class="segBtn" data-plan="NO">NO</button>
+          </div>
         </div>
 
         <div class="row">
-          <label>Stop Loss</label>
-          <input id="fSL" type="number" step="0.01" placeholder="e.g. 2350.80" />
+          <label id="lblMistakeType">Mistake</label>
+          <select id="mistakeType">
+            <option value="">—</option>
+            <option value="FOMO">FOMO</option>
+            <option value="Early entry">Early entry</option>
+            <option value="Late entry">Late entry</option>
+            <option value="Overrisk">Overrisk</option>
+            <option value="No stop discipline">No stop discipline</option>
+            <option value="Revenge trade">Revenge trade</option>
+            <option value="Low quality setup">Low quality setup</option>
+          </select>
         </div>
 
         <div class="row">
-          <label>Take Profit (optional)</label>
-          <input id="fTP" type="number" step="0.01" placeholder="e.g. 2368.00" />
+          <label id="lblReviewNotes">Review notes</label>
+          <textarea id="reviewNotes" rows="4" placeholder="What will you do differently next time?"></textarea>
         </div>
 
-        <div class="row">
-          <label>Lot</label>
-          <input id="fLot" type="number" step="0.01" placeholder="e.g. 0.10" />
+        <div class="row2">
+          <button class="btn" id="saveReviewBtn">💾 Save Review</button>
+          <button class="btn ghost" id="clearReviewBtn">Clear</button>
         </div>
-
-        <div class="row">
-          <label>Result (PnL $)</label>
-          <input id="fPnl" type="number" step="0.01" placeholder="e.g. 120.50" />
-          <div class="hint">For now you enter PnL manually. Next step we’ll calculate it automatically.</div>
-        </div>
-
-        <div class="actions">
-          <button class="btn" id="saveTradeBtn">✅ Save Trade</button>
-          <button class="btn ghost" id="cancelTradeBtn">Cancel</button>
-        </div>
-      </div>
+      </section>
     </section>
 
-    <section class="panel">
-      <div class="panelTitle">Trades</div>
-      <div id="tradesList" class="list"></div>
-      <button class="btn small" id="seedBtn">Add demo trade</button>
-      <button class="btn small danger" id="clearBtn">Clear local data</button>
+    <!-- SETTINGS -->
+    <section class="screen" id="screen-settings">
+      <section class="panel">
+        <div class="panelHead">
+          <div class="panelTitle" id="lblSettings">Settings</div>
+          <div class="panelRight">
+            <span class="badge">Local</span>
+          </div>
+        </div>
+
+        <div class="panel soft">
+          <div class="panelTitle" id="lblDataTools">Data tools</div>
+          <div class="row2">
+            <button class="btn ghost" id="exportBtn">Export JSON</button>
+            <label class="btn ghost fileBtn">
+              Import JSON
+              <input id="importFile" type="file" accept="application/json" />
+            </label>
+          </div>
+          <button class="btn danger" id="resetAllBtn">Reset all local data</button>
+          <div class="mini" id="hintReset">This only affects this device/browser.</div>
+        </div>
+
+        <div class="panel soft">
+          <div class="panelTitle" id="lblAbout">About</div>
+          <div class="mini" id="aboutText">
+            © AdigaFX Trade Journal • Private Telegram Mini App
+          </div>
+        </div>
+      </section>
     </section>
+
+    <footer class="foot">
+      <div class="footText" id="footerText">AdigaFX • v1 • XAUUSD</div>
+    </footer>
   </div>
 
   <script src="app.js"></script>
