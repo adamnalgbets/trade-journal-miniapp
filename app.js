@@ -1,14 +1,11 @@
 /* ======================================================
-   AdigaFX Trade Journal – FINAL v35
-   - Time filter (ALL/TODAY/WEEK/MONTH)
-   - Session analytics
-   - Top setup analytics (PnL/WR/AvgR/Count)
-   - Discipline cost (plan=NO + mistake type)
-   - Streak current + best/worst
-   - All trades full details + Delete
-   - Close/Review/Edit via SELECT (no prompt)
-   - Snapshot screen for sharing (screenshot)
-   - Export/Import, Hide PnL default OFF, Language toggle saved
+   AdigaFX Trade Journal – FULL v36
+   - Local storage only
+   - XAUUSD logic: $ = (price diff) * lot * 100
+   - Time filters + analytics + all trades table + delete/edit
+   - Checklist optional (no requirement)
+   - Settings: Export/Import/Reset, Hide PnL, Language EN/HE (RTL)
+   - Share Snapshot screen (screenshot)
    Built by FaShuSh for AdigaFX
 ====================================================== */
 
@@ -18,110 +15,198 @@ try {
   tg?.expand();
 } catch (e) {}
 
-const STORAGE_KEY = "adigafx_trade_journal_v35";
+const STORAGE_KEY = "adigafx_trade_journal_v36";
 
 let state = {
   trades: [],
   hidePnl: false,
-  language: "EN",
-  period: "ALL"
+  language: "EN",     // EN | HE
+  period: "ALL"       // ALL | TODAY | WEEK | MONTH
 };
 
 try {
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (saved) state = { ...state, ...saved };
+  if (saved && typeof saved === "object") state = { ...state, ...saved };
 } catch (e) {}
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
 
 const $ = (id) => document.getElementById(id);
 const $$ = (q) => Array.from(document.querySelectorAll(q));
 
-function num(v){ const n = parseFloat(v); return isNaN(n) ? null : n; }
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-function fmtMoney(v){
-  if (state.hidePnl) return "Hidden";
-  return "$" + (v || 0).toFixed(2);
-}
+function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
 
-function fmtPct(v){ return (isFinite(v) ? Math.round(v) : 0) + "%"; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
 
-function todayStr(){
+function daysAgo(n){
   const d = new Date();
+  d.setDate(d.getDate() - n);
   return d.toISOString().slice(0,10);
 }
 
-function parseDate(s){
-  // s: YYYY-MM-DD
-  if (!s) return null;
-  const [y,m,dd] = s.split("-").map(x=>parseInt(x,10));
-  if (!y||!m||!dd) return null;
-  return new Date(y, m-1, dd);
+function fmtMoney(v){
+  if (state.hidePnl) return t("hidden");
+  return "$" + (Number(v)||0).toFixed(2);
 }
+function fmtMoneyRaw(v){ return "$" + (Number(v)||0).toFixed(2); }
 
-function startOfWeek(d){
-  // Monday
-  const x = new Date(d);
-  const day = (x.getDay()+6)%7; // Mon=0
-  x.setDate(x.getDate() - day);
-  x.setHours(0,0,0,0);
-  return x;
-}
-
-function startOfMonth(d){
-  const x = new Date(d.getFullYear(), d.getMonth(), 1);
-  x.setHours(0,0,0,0);
-  return x;
-}
-
-function inPeriod(trade){
-  if (state.period === "ALL") return true;
-  const td = parseDate(trade.date) || parseDate(todayStr());
-  const now = new Date();
-  now.setHours(0,0,0,0);
-
-  if (state.period === "TODAY"){
-    return td.toDateString() === now.toDateString();
-  }
-  if (state.period === "WEEK"){
-    const w0 = startOfWeek(now);
-    return td >= w0 && td <= now;
-  }
-  if (state.period === "MONTH"){
-    const m0 = startOfMonth(now);
-    return td >= m0 && td <= now;
-  }
-  return true;
-}
-
-function calcRisk(entry, sl, lot){
-  return Math.abs(entry - sl) * lot * 100;
-}
-
+function calcRisk(entry, sl, lot){ return Math.abs(entry - sl) * lot * 100; }
 function calcPnL(dir, entry, exit, lot){
-  const diff = dir === "LONG" ? (exit - entry) : (entry - exit);
+  const diff = (dir === "LONG") ? (exit - entry) : (entry - exit);
   return diff * lot * 100;
 }
+function calcR(pnl, risk){ return risk ? (pnl / risk) : 0; }
 
-function calcMAE(entry, maePrice, lot){
-  if (maePrice == null) return 0;
-  return Math.abs(entry - maePrice) * lot * 100;
-}
-
-function calcMFE(entry, mfePrice, lot){
-  if (mfePrice == null) return 0;
-  return Math.abs(mfePrice - entry) * lot * 100;
-}
-
-function calcR(pnl, risk){
-  if (!risk) return 0;
-  return pnl / risk;
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  })[m]);
 }
 
 /* =========================
-   Navigation
+   i18n
+========================= */
+const I18N = {
+  EN: {
+    subtitle: "XAUUSD • Trade Journal (Local)",
+    tab_home:"Home", tab_checklist:"Checklist", tab_new:"New", tab_close:"Close", tab_review:"Review", tab_all:"All", tab_edit:"Edit", tab_settings:"Settings", tab_snapshot:"Snapshot",
+    time_all:"ALL", time_today:"TODAY", time_week:"WEEK", time_month:"MONTH",
+    overview_title:"Overview", sessions_title:"Sessions", recent_title:"Recent (filtered)", all_title:"All Trades (filtered)",
+    checklist_title:"Pre-Trade Checklist (optional)", checklist_box_title:"Checklist (NOT required)", checklist_box_hint:"Leave unchecked if you want — still saves.",
+    new_title:"New Trade", close_title:"Close Trade", review_title:"Review Trade", edit_title:"Edit Trade",
+    label_direction:"Direction", label_date:"Date", label_session:"Session", label_entry:"Entry", label_sl:"Stop Loss", label_tp:"TP", label_tp_optional:"TP (optional)", label_lot:"Lot",
+    label_setup:"Strategy / Setup", ph_setup:"e.g. Sweep + MSS", label_notes:"Notes",
+    k_risk_usd:"Risk $:", k_r_result:"R result:",
+    btn_add_open:"✅ Add OPEN trade", btn_save_open:"✅ Save OPEN",
+    btn_select_open:"Select OPEN trade", btn_select_trade:"Select trade",
+    label_exit:"Exit price", label_pnl_if_no_exit:"PnL ($) (if no exit)",
+    mae_title:"MAE / MFE",
+    mae_explain:"MAE = Maximum Adverse Excursion (worst against you) • MFE = Maximum Favorable Excursion (best for you)",
+    mae_short:"MAE = worst against you • MFE = best for you",
+    mae_art:"LONG: MAE=lowest • MFE=highest\nSHORT: MAE=highest • MFE=lowest",
+    label_mae_price:"MAE price (worst)", label_mfe_price:"MFE price (best)",
+    btn_close_save:"🏁 Close & Save",
+    label_followed_plan:"Followed plan?", yes:"YES", no:"NO",
+    label_mistake_type:"Discipline mistake type", none:"None",
+    label_mistake_note:"Mistake note (optional)", ph_mistake:"Short note...",
+    label_review_notes:"Review notes", btn_save_review:"💾 Save review",
+    label_status:"Status", open:"OPEN", closed:"CLOSED", btn_save_changes:"💾 Save changes",
+    settings_sharing:"Sharing", btn_share_snapshot:"Share Snapshot", btn_export_json:"Export JSON",
+    label_import_json:"Import JSON", ph_import:"Paste backup JSON here...",
+    btn_import_replace:"Import (Replace)", btn_import_merge:"Import (Merge)",
+    settings_language:"Language", lang_hint:"Default is EN. Hebrew uses RTL.",
+    settings_privacy:"Privacy", hide_pnl:"Hide PnL amounts (default OFF)",
+    danger_zone:"Danger zone", btn_reset_all:"Reset all data", reset_hint:"Deletes everything saved locally on this device.",
+    btn_back:"Back", btn_how_share:"How to share",
+    unknown:"Unknown", dash:"—",
+    long:"LONG", short:"SHORT",
+    credit:"Built by FaShuSh for AdigaFX",
+    hidden:"Hidden",
+    msg_no_closed:"No closed trades in this period.",
+    msg_no_trades:"No trades in this period.",
+    msg_pick_open:"No OPEN trades in this period.",
+    msg_pick_trade:"No trades to pick.",
+    msg_need_entry_sl_lot:"Entry, SL and Lot are required",
+    msg_need_exit_or_pnl:"Exit price OR PnL is required",
+    msg_pick_first:"Pick a trade first",
+    msg_reset_confirm:"Type DELETE to confirm",
+    msg_export_ok:"Export copied to clipboard ✅",
+    msg_export_fail:"Copy failed. You can manually copy from the text area.",
+    msg_import_ok:"Imported ✅",
+    msg_import_bad:"Invalid JSON ❌",
+    msg_merge_ok:"Merged ✅",
+    msg_deleted:"Deleted ✅",
+    msg_share_tip:"Take a screenshot of this screen and share it ✅"
+  },
+
+  HE: {
+    subtitle: "XAUUSD • יומן מסחר (שמירה מקומית)",
+    tab_home:"בית", tab_checklist:"צ׳ק ליסט", tab_new:"חדש", tab_close:"סגירה", tab_review:"סקירה", tab_all:"הכל", tab_edit:"עריכה", tab_settings:"הגדרות", tab_snapshot:"שיתוף",
+    time_all:"הכל", time_today:"היום", time_week:"שבוע", time_month:"חודש",
+    overview_title:"סיכום", sessions_title:"סשנים", recent_title:"אחרונים (מסונן)", all_title:"כל העסקאות (מסונן)",
+    checklist_title:"צ׳ק ליסט לפני כניסה (אופציונלי)", checklist_box_title:"צ׳ק ליסט (לא חובה)", checklist_box_hint:"אפשר להשאיר לא מסומן — עדיין נשמר.",
+    new_title:"עסקה חדשה", close_title:"סגירת עסקה", review_title:"סקירת עסקה", edit_title:"עריכת עסקה",
+    label_direction:"כיוון", label_date:"תאריך", label_session:"סשן", label_entry:"כניסה", label_sl:"סטופ", label_tp:"טייק", label_tp_optional:"טייק (אופציונלי)", label_lot:"לוט",
+    label_setup:"אסטרטגיה / סטאפ", ph_setup:"לדוגמה: Sweep + MSS", label_notes:"הערות",
+    k_risk_usd:"סיכון $:", k_r_result:"תוצאת R:",
+    btn_add_open:"✅ הוסף עסקה פתוחה", btn_save_open:"✅ שמור כפתוחה",
+    btn_select_open:"בחר עסקה פתוחה", btn_select_trade:"בחר עסקה",
+    label_exit:"מחיר יציאה", label_pnl_if_no_exit:"רווח/הפסד ($) אם אין יציאה",
+    mae_title:"MAE / MFE",
+    mae_explain:"MAE = מקסימום נגדך • MFE = מקסימום לטובתך",
+    mae_short:"MAE = נגדך • MFE = לטובתך",
+    mae_art:"לונג: MAE=נמוך ביותר • MFE=גבוה ביותר\nשורט: MAE=גבוה ביותר • MFE=נמוך ביותר",
+    label_mae_price:"מחיר MAE (הכי נגדך)", label_mfe_price:"מחיר MFE (הכי לטובתך)",
+    btn_close_save:"🏁 סגור ושמור",
+    label_followed_plan:"פעלתי לפי התכנית?", yes:"כן", no:"לא",
+    label_mistake_type:"סוג טעות משמעת", none:"אין",
+    label_mistake_note:"הערת טעות (אופציונלי)", ph_mistake:"הערה קצרה...",
+    label_review_notes:"הערות סקירה", btn_save_review:"💾 שמור סקירה",
+    label_status:"סטטוס", open:"פתוח", closed:"סגור", btn_save_changes:"💾 שמור שינויים",
+    settings_sharing:"שיתוף", btn_share_snapshot:"שתף תמונת מצב", btn_export_json:"ייצוא JSON",
+    label_import_json:"ייבוא JSON", ph_import:"הדבק גיבוי JSON כאן...",
+    btn_import_replace:"ייבוא (החלפה)", btn_import_merge:"ייבוא (מיזוג)",
+    settings_language:"שפה", lang_hint:"ברירת מחדל אנגלית. בעברית RTL.",
+    settings_privacy:"פרטיות", hide_pnl:"הסתר סכומי PnL (ברירת מחדל כבוי)",
+    danger_zone:"אזור מסוכן", btn_reset_all:"אפס את כל הנתונים", reset_hint:"מוחק הכל מהמכשיר הזה.",
+    btn_back:"חזרה", btn_how_share:"איך משתפים",
+    unknown:"לא ידוע", dash:"—",
+    long:"לונג", short:"שורט",
+    credit:"נבנה ע״י FaShuSh עבור AdigaFX",
+    hidden:"מוסתר",
+    msg_no_closed:"אין עסקאות סגורות בתקופה הזו.",
+    msg_no_trades:"אין עסקאות בתקופה הזו.",
+    msg_pick_open:"אין עסקאות פתוחות בתקופה הזו.",
+    msg_pick_trade:"אין עסקאות לבחור.",
+    msg_need_entry_sl_lot:"חובה למלא כניסה, סטופ ולוט",
+    msg_need_exit_or_pnl:"חובה למלא מחיר יציאה או PnL",
+    msg_pick_first:"בחר עסקה קודם",
+    msg_reset_confirm:"כתוב DELETE לאישור",
+    msg_export_ok:"הייצוא הועתק ללוח ✅",
+    msg_export_fail:"ההעתקה נכשלה. אפשר להעתיק ידנית מהטקסט.",
+    msg_import_ok:"יובא בהצלחה ✅",
+    msg_import_bad:"JSON לא תקין ❌",
+    msg_merge_ok:"מוזג בהצלחה ✅",
+    msg_deleted:"נמחק ✅",
+    msg_share_tip:"צלם מסך של הדף הזה ושתף ✅"
+  }
+};
+
+function t(key){
+  const lang = state.language in I18N ? state.language : "EN";
+  return I18N[lang][key] ?? I18N.EN[key] ?? key;
+}
+
+function applyLanguage(){
+  const isHE = state.language === "HE";
+  document.documentElement.lang = isHE ? "he" : "en";
+  document.documentElement.dir = isHE ? "rtl" : "ltr";
+  document.body.classList.toggle("rtl", isHE);
+
+  // text
+  $$("[data-i18n]").forEach(el=>{
+    const k = el.getAttribute("data-i18n");
+    el.textContent = t(k);
+  });
+
+  // placeholders
+  $$("[data-i18n-ph]").forEach(el=>{
+    const k = el.getAttribute("data-i18n-ph");
+    el.setAttribute("placeholder", t(k));
+  });
+
+  // Some fixed placeholders inside modal
+  const sheetSearch = $("sheetSearch");
+  if (sheetSearch) sheetSearch.setAttribute("placeholder", isHE ? "חיפוש..." : "Search...");
+
+  // Update any dynamic render strings
+  renderDashboard();
+  renderAllTrades();
+  renderSnapshot();
+}
+
+/* =========================
+   UI Navigation
 ========================= */
 function showScreen(route){
   $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.route === route));
@@ -129,24 +214,32 @@ function showScreen(route){
 
   if (route === "dash") renderDashboard();
   if (route === "all") renderAllTrades();
-  if (route === "close") hydrateCloseSelect();
-  if (route === "review") hydrateReviewSelect();
-  if (route === "edit") hydrateEditSelect();
   if (route === "snapshot") renderSnapshot();
 }
 
 $$(".tab").forEach(btn => btn.addEventListener("click", ()=>showScreen(btn.dataset.route)));
+$("openSettingsBtn").onclick = ()=> showScreen("settings");
 
 $("qaNew").onclick = ()=>showScreen("new");
 $("qaChecklist").onclick = ()=>showScreen("check");
 $("qaClose").onclick = ()=>showScreen("close");
 $("qaAll").onclick = ()=>showScreen("all");
-$("openSettingsBtn").onclick = ()=>showScreen("settings");
 
 /* =========================
-   Seg controls helper
+   Seg helpers
 ========================= */
-function wireSeg(containerId, onChange){
+function setSegActive(containerId, valueKey, value){
+  $$("#"+containerId+" .segBtn").forEach(b => {
+    const v = b.dataset[valueKey];
+    b.classList.toggle("active", v === value);
+  });
+}
+function getSegValue(containerId, valueKey, fallback){
+  const b = document.querySelector(`#${containerId} .segBtn.active`);
+  return b?.dataset[valueKey] ?? fallback;
+}
+
+function wireSeg(containerId, valueKey, onChange){
   const el = $(containerId);
   if (!el) return;
   el.addEventListener("click", (e)=>{
@@ -154,285 +247,153 @@ function wireSeg(containerId, onChange){
     if (!btn) return;
     $$("#"+containerId+" .segBtn").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    onChange(btn);
+    onChange(btn.dataset[valueKey]);
   });
 }
 
-wireSeg("dirSeg", ()=>{ updateNewRiskPreview(); });
-wireSeg("cDirSeg", ()=>{ updateChecklistRiskPreview(); });
-wireSeg("eDirSeg", ()=>{ if (editingTrade) { editingTrade.direction = activeDir("eDirSeg"); } updateEditDerived(); });
-
-wireSeg("timeSeg", (btn)=>{
-  state.period = btn.dataset.time;
+/* time seg */
+wireSeg("timeSeg","time",(val)=>{
+  state.period = val;
   saveState();
   renderDashboard();
   renderAllTrades();
+  renderSnapshot();
 });
+setSegActive("timeSeg","time", state.period);
 
-/* Restore active period button */
-(function(){
-  const btn = $$("#timeSeg .segBtn").find(b=>b.dataset.time === state.period);
-  if (btn){
-    $$("#timeSeg .segBtn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-  }
-})();
-
-function activeDir(segId){
-  return $$("#"+segId+" .segBtn.active")[0]?.dataset.dir || "LONG";
-}
+/* direction segs */
+wireSeg("dirSeg","dir", ()=> updateNewRisk());
+wireSeg("cDirSeg","dir", ()=> updateChecklistRisk());
+wireSeg("eDirSeg","dir", ()=> updateEditDerived());
 
 /* =========================
-   Derived lists (filtered)
+   Filtering
 ========================= */
 function filteredTrades(){
-  return state.trades.filter(inPeriod);
+  if (state.period === "ALL") return state.trades.slice();
+
+  const min =
+    state.period === "TODAY" ? todayStr() :
+    state.period === "WEEK" ? daysAgo(6) :
+    state.period === "MONTH" ? daysAgo(29) :
+    "0000-01-01";
+
+  return state.trades.filter(t => (t.date || "0000-01-01") >= min);
 }
-function filteredClosed(){
-  return filteredTrades().filter(t=>t.status==="CLOSED");
-}
-function filteredOpen(){
-  return filteredTrades().filter(t=>t.status==="OPEN");
-}
-
-/* =========================
-   Dashboard + Gadgets
-========================= */
-function setupAgg(trades){
-  const map = new Map();
-  trades.forEach(t=>{
-    const key = (t.strategy||"").trim();
-    if (!key) return;
-    if (!map.has(key)) map.set(key, {name:key, pnl:0, n:0, wins:0, rSum:0});
-    const o = map.get(key);
-    o.pnl += (t.pnl||0);
-    o.n += 1;
-    if ((t.pnl||0) > 0) o.wins += 1;
-    o.rSum += (t.r||0);
-  });
-  const arr = Array.from(map.values()).map(o=>({
-    ...o,
-    wr: o.n ? (o.wins/o.n*100) : 0,
-    avgR: o.n ? (o.rSum/o.n) : 0
-  }));
-  arr.sort((a,b)=> b.pnl - a.pnl);
-  return arr;
-}
-
-function sessionAgg(trades){
-  const sessions = ["Asia","London","NY",""];
-  const map = {};
-  sessions.forEach(s=>map[s]={name:(s||"Unknown"), pnl:0, n:0, wins:0, rSum:0});
-  trades.forEach(t=>{
-    const s = (t.session||"");
-    if (!map[s]) map[s]={name:(s||"Unknown"), pnl:0, n:0, wins:0, rSum:0};
-    map[s].pnl += (t.pnl||0);
-    map[s].n += 1;
-    if ((t.pnl||0) > 0) map[s].wins += 1;
-    map[s].rSum += (t.r||0);
-  });
-  Object.values(map).forEach(o=>{
-    o.wr = o.n ? (o.wins/o.n*100) : 0;
-    o.avgR = o.n ? (o.rSum/o.n) : 0;
-  });
-  return map;
-}
-
-function streakInfo(closed){
-  // closed should be sorted by date/id ascending
-  const arr = [...closed].sort((a,b)=> (a.closedAt||a.id) - (b.closedAt||b.id));
-  let current = {type:null, len:0};
-  let bestW = 0;
-  let bestL = 0;
-
-  let runType = null;
-  let runLen = 0;
-
-  arr.forEach(t=>{
-    const tType = (t.pnl||0) >= 0 ? "W" : "L";
-    if (runType === tType) runLen++;
-    else { runType = tType; runLen = 1; }
-    if (tType === "W") bestW = Math.max(bestW, runLen);
-    if (tType === "L") bestL = Math.max(bestL, runLen);
-  });
-
-  // current streak (from end)
-  for (let i = arr.length-1; i>=0; i--){
-    const tType = (arr[i].pnl||0) >= 0 ? "W" : "L";
-    if (!current.type){ current.type = tType; current.len = 1; }
-    else if (current.type === tType) current.len++;
-    else break;
-  }
-
-  return { current, bestW, bestL };
-}
-
-function disciplineStats(closed){
-  const bad = closed.filter(t=> (t.review?.plan==="NO") || (t.review?.mistakeType));
-  const cost = bad.reduce((a,t)=> a + (t.pnl||0), 0);
-  const byType = {};
-  bad.forEach(t=>{
-    const k = t.review?.mistakeType || (t.review?.plan==="NO" ? "Plan NO" : "Other");
-    byType[k] = (byType[k]||0) + (t.pnl||0);
-  });
-  const top = Object.entries(byType).sort((a,b)=> b[1]-a[1])[0];
-  return { cost, n: bad.length, topType: top ? top[0] : "—" };
-}
-
-function renderDashboard(){
-  const closed = filteredClosed();
-  const open = filteredOpen();
-
-  // PnL / winrate
-  const totalPnL = closed.reduce((a,t)=>a+(t.pnl||0),0);
-  const wins = closed.filter(t=>(t.pnl||0)>0).length;
-  const losses = closed.filter(t=>(t.pnl||0)<0).length;
-
-  $("statPnl").innerText = fmtMoney(totalPnL);
-  $("statPnlMeta").innerText = `${closed.length} closed (filtered)`;
-
-  $("statWinRate").innerText = closed.length ? fmtPct(wins/closed.length*100) : "0%";
-  $("statWins").innerText = `${wins}W / ${losses}L`;
-
-  const avgR = closed.reduce((a,t)=>a+(t.r||0),0) / (closed.length||1);
-  $("statAvgR").innerText = avgR.toFixed(2) + "R";
-  $("statExp").innerText = closed.length ? `Avg per trade` : "";
-
-  // Open risk
-  const openRisk = open.reduce((a,t)=>a+(t.risk||0),0);
-  $("statOpenRisk").innerText = fmtMoney(openRisk);
-  $("statOpenCount").innerText = `${open.length} open (filtered)`;
-
-  // MAE/MFE avg
-  const maeAvg = closed.reduce((a,t)=>a+(t.mae||0),0)/(closed.length||1);
-  const mfeAvg = closed.reduce((a,t)=>a+(t.mfe||0),0)/(closed.length||1);
-  $("statMaeAvg").innerText = fmtMoney(maeAvg);
-  $("statMfeAvg").innerText = fmtMoney(mfeAvg);
-
-  // Best/Worst
-  const best = closed.length ? Math.max(...closed.map(t=>t.pnl||0)) : 0;
-  const worst = closed.length ? Math.min(...closed.map(t=>t.pnl||0)) : 0;
-  $("statBestWorst").innerText = `${fmtMoney(best)} / ${fmtMoney(worst)}`;
-
-  // Streak gadgets
-  const st = streakInfo(closed);
-  if (!closed.length){
-    $("statStreak").innerText = "—";
-    $("statStreakMeta").innerText = "";
-  } else {
-    $("statStreak").innerText = `${st.current.type}${st.current.len}`;
-    $("statStreakMeta").innerText = `Best W${st.bestW} / Best L${st.bestL}`;
-  }
-
-  // Discipline gadgets
-  const ds = disciplineStats(closed);
-  $("statDiscipline").innerText = fmtMoney(ds.cost);
-  $("statDisciplineMeta").innerText = ds.n ? `${ds.n} trades • Top: ${ds.topType}` : "0 trades";
-
-  // Top setup gadgets
-  const setups = setupAgg(closed);
-  if (!setups.length){
-    $("statTopSetup").innerText = "—";
-    $("statTopSetupHint").innerText = "";
-  } else {
-    const s = setups[0];
-    $("statTopSetup").innerText = s.name;
-    $("statTopSetupHint").innerText = `${fmtMoney(s.pnl)} • ${s.n} trades • ${fmtPct(s.wr)} • ${s.avgR.toFixed(2)}R`;
-  }
-
-  // Sessions gadgets
-  const sess = sessionAgg(closed);
-  function setSess(idVal, idMeta, key){
-    const o = sess[key] || {pnl:0,n:0,wr:0,avgR:0};
-    $(idVal).innerText = fmtMoney(o.pnl);
-    $(idMeta).innerText = `${o.n} • ${fmtPct(o.wr)} • ${o.avgR.toFixed(2)}R`;
-  }
-  setSess("sessAsia","sessAsiaMeta","Asia");
-  setSess("sessLondon","sessLondonMeta","London");
-  setSess("sessNY","sessNYMeta","NY");
-  setSess("sessU","sessUMeta","");
-
-  // Recent list (filtered)
-  const recent = [...closed].sort((a,b)=> (b.closedAt||b.id) - (a.closedAt||a.id)).slice(0,6);
-  $("tradesList").innerHTML = recent.map(t=>`
-    <div class="item">
-      <div class="itemTop">
-        <span>${t.date||""} • ${t.direction} • ${t.session||"—"}</span>
-        <span>${fmtMoney(t.pnl||0)}</span>
-      </div>
-      <div class="kv"><span class="k">Setup:</span> <span class="v">${escapeHtml(t.strategy||"—")}</span></div>
-      <div class="kv"><span class="k">Entry/Exit:</span> <span class="v">${n2(t.entry)} → ${t.exit!=null?n2(t.exit):"—"}</span></div>
-      <div class="kv"><span class="k">R:</span> <span class="v">${(t.r||0).toFixed(2)}R</span> • <span class="k">MAE:</span> <span class="v">${fmtMoney(t.mae||0)}</span> • <span class="k">MFE:</span> <span class="v">${fmtMoney(t.mfe||0)}</span></div>
-    </div>
-  `).join("") || `<div class="kv">No closed trades in this period.</div>`;
-
-  // Keep selects synced
-  hydrateCloseSelect();
-  hydrateReviewSelect();
-  hydrateEditSelect();
-  renderSnapshot(); // keeps snapshot always consistent
-}
-
-/* =========================
-   Safe formatting helpers
-========================= */
-function n2(x){
-  if (x==null || !isFinite(x)) return "—";
-  return Number(x).toFixed(2);
-}
-function escapeHtml(s){
-  return (s||"").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  })[m]);
-}
+function filteredClosed(){ return filteredTrades().filter(t=>t.status==="CLOSED"); }
+function filteredOpen(){ return filteredTrades().filter(t=>t.status==="OPEN"); }
 
 /* =========================
    Risk previews
 ========================= */
-function updateNewRiskPreview(){
+function updateNewRisk(){
   const entry = num($("fEntry").value);
   const sl = num($("fSL").value);
   const lot = num($("fLot").value);
-  if (entry==null || sl==null || lot==null){
-    $("riskUsd").innerText = "$0.00";
-    return;
-  }
-  const risk = calcRisk(entry, sl, lot);
-  $("riskUsd").innerText = fmtMoney(risk);
+  const risk = (entry!=null && sl!=null && lot!=null) ? calcRisk(entry, sl, lot) : 0;
+  $("riskUsd").textContent = fmtMoney(risk);
 }
-
-function updateChecklistRiskPreview(){
+function updateChecklistRisk(){
   const entry = num($("cEntry").value);
   const sl = num($("cSL").value);
   const lot = num($("cLot").value);
-  if (entry==null || sl==null || lot==null){
-    $("cRiskUsd").innerText = "$0.00";
-    return;
-  }
-  const risk = calcRisk(entry, sl, lot);
-  $("cRiskUsd").innerText = fmtMoney(risk);
+  const risk = (entry!=null && sl!=null && lot!=null) ? calcRisk(entry, sl, lot) : 0;
+  $("cRiskUsd").textContent = fmtMoney(risk);
 }
-
-["fEntry","fSL","fLot"].forEach(id => $(id).addEventListener("input", updateNewRiskPreview));
-["cEntry","cSL","cLot"].forEach(id => $(id).addEventListener("input", updateChecklistRiskPreview));
+["fEntry","fSL","fLot"].forEach(id=> $(id).addEventListener("input", updateNewRisk));
+["cEntry","cSL","cLot"].forEach(id=> $(id).addEventListener("input", updateChecklistRisk));
 
 /* =========================
-   Checklist -> Add OPEN
+   Modal selector
 ========================= */
-$("cAddTradeBtn").onclick = () => {
-  const dir = activeDir("cDirSeg");
+const modal = $("tradeModal");
+const sheetClose = $("sheetClose");
+const sheetTitle = $("sheetTitle");
+const sheetSearch = $("sheetSearch");
+const sheetList = $("sheetList");
+
+let modalPickResolve = null;
+let modalItems = [];
+
+function openModal(title, items, renderLine){
+  modalItems = items.slice();
+  sheetTitle.textContent = title;
+  sheetSearch.value = "";
+  sheetList.innerHTML = "";
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
+
+  const rerender = ()=>{
+    const q = sheetSearch.value.toLowerCase().trim();
+    const list = modalItems.filter(t=>{
+      if (!q) return true;
+      const hay = [
+        t.date, t.status, t.direction, t.session, t.strategy,
+        (t.review?.mistakeType||""), (t.review?.mistake||""), (t.review?.notes||"")
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+
+    sheetList.innerHTML = list.map(tr=>{
+      const right = tr.status==="CLOSED" ? pillPnL(tr.pnl||0) : `<span class="pill warn">${t("open")}</span>`;
+      return `
+        <div class="sheetItem" data-id="${tr.id}">
+          <div class="sheetItemTop">
+            <span>${esc(tr.direction)} • ${esc(tr.status)}</span>
+            <span>${right}</span>
+          </div>
+          <div class="sheetItemSub">${renderLine(tr)}</div>
+        </div>
+      `;
+    }).join("");
+
+    $$("#sheetList .sheetItem").forEach(el=>{
+      el.onclick = ()=>{
+        const id = Number(el.dataset.id);
+        const picked = modalItems.find(x=>x.id===id) || null;
+        closeModal();
+        if (modalPickResolve) modalPickResolve(picked);
+      };
+    });
+  };
+
+  sheetSearch.oninput = rerender;
+  rerender();
+
+  return new Promise(resolve => { modalPickResolve = resolve; });
+}
+
+function closeModal(){
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden","true");
+  modalPickResolve = null;
+}
+
+sheetClose.onclick = closeModal;
+modal.addEventListener("click",(e)=>{ if (e.target === modal) closeModal(); });
+
+function pillPnL(v){
+  if (state.hidePnl) return `<span class="pill neu">${t("hidden")}</span>`;
+  const n = Number(v)||0;
+  if (n > 0) return `<span class="pill ok">+${fmtMoneyRaw(n)}</span>`;
+  if (n < 0) return `<span class="pill bad">-${fmtMoneyRaw(Math.abs(n))}</span>`;
+  return `<span class="pill neu">${fmtMoneyRaw(0)}</span>`;
+}
+
+/* =========================
+   Create trades
+========================= */
+$("cAddTradeBtn").onclick = ()=>{
+  const dir = getSegValue("cDirSeg","dir","LONG");
   const entry = num($("cEntry").value);
   const sl = num($("cSL").value);
   const lot = num($("cLot").value);
 
-  if (entry==null || sl==null || lot==null){
-    alert("Entry, SL and Lot are required");
-    return;
-  }
+  if (entry==null || sl==null || lot==null){ alert(t("msg_need_entry_sl_lot")); return; }
 
   const trade = {
     id: Date.now(),
-    status: "OPEN",
+    status:"OPEN",
     direction: dir,
     date: $("cDate").value || todayStr(),
     session: $("cSession").value || "",
@@ -441,11 +402,14 @@ $("cAddTradeBtn").onclick = () => {
     exit: null,
     pnl: 0,
     risk: calcRisk(entry, sl, lot),
+    r: 0,
     mae: 0,
     mfe: 0,
-    r: 0,
+    maePrice: null,
+    mfePrice: null,
     strategy: "",
     notes: $("cNotes").value || "",
+    checklist: $$(".cBox").map(b=>!!b.checked),
     review: {}
   };
 
@@ -455,23 +419,17 @@ $("cAddTradeBtn").onclick = () => {
   showScreen("dash");
 };
 
-/* =========================
-   New -> Save OPEN
-========================= */
-$("saveTradeBtn").onclick = () => {
-  const dir = activeDir("dirSeg");
+$("saveTradeBtn").onclick = ()=>{
+  const dir = getSegValue("dirSeg","dir","LONG");
   const entry = num($("fEntry").value);
   const sl = num($("fSL").value);
   const lot = num($("fLot").value);
 
-  if (entry==null || sl==null || lot==null){
-    alert("Entry, SL and Lot required");
-    return;
-  }
+  if (entry==null || sl==null || lot==null){ alert(t("msg_need_entry_sl_lot")); return; }
 
   const trade = {
     id: Date.now(),
-    status: "OPEN",
+    status:"OPEN",
     direction: dir,
     date: $("fDate").value || todayStr(),
     session: $("fSession").value || "",
@@ -480,9 +438,11 @@ $("saveTradeBtn").onclick = () => {
     exit: null,
     pnl: 0,
     risk: calcRisk(entry, sl, lot),
+    r: 0,
     mae: 0,
     mfe: 0,
-    r: 0,
+    maePrice: null,
+    mfePrice: null,
     strategy: ($("fStrategy").value||"").trim(),
     notes: $("fNotes").value || "",
     review: {}
@@ -495,363 +455,560 @@ $("saveTradeBtn").onclick = () => {
 };
 
 /* =========================
-   Close (select dropdown)
+   Close trade
 ========================= */
-function hydrateCloseSelect(){
-  const sel = $("closeSelect");
-  if (!sel) return;
+let closingTradeId = null;
 
-  const open = filteredOpen();
-  const prev = sel.value;
+$("closePickBtn").onclick = async ()=>{
+  const openTrades = filteredOpen().slice().sort((a,b)=>b.id-a.id);
+  if (!openTrades.length){ alert(t("msg_pick_open")); return; }
 
-  sel.innerHTML = open.length
-    ? open.map(t=>`<option value="${t.id}">${t.date||""} • ${t.direction} @ ${n2(t.entry)} • ${t.session||"—"} • ${escapeHtml(t.strategy||"")}</option>`).join("")
-    : `<option value="">No OPEN trades (filtered)</option>`;
+  const picked = await openModal(
+    t("btn_select_open"),
+    openTrades,
+    (tr)=> `${esc(tr.date)} • ${esc(tr.session||t("unknown"))} • ${t("label_entry")}: ${tr.entry.toFixed(2)} • ${t("label_sl")}: ${tr.sl.toFixed(2)} • ${t("label_lot")}: ${tr.lot}`
+  );
 
-  // keep previous if possible
-  if (prev && open.some(t=>String(t.id)===String(prev))) sel.value = prev;
-
-  updateCloseMeta();
-}
-
-function getTradeById(id){
-  return state.trades.find(t=>String(t.id)===String(id));
-}
+  if (!picked) return;
+  closingTradeId = picked.id;
+  $("closeMeta").textContent = `${picked.date} • ${picked.direction} • ${picked.session||t("unknown")} • Entry ${picked.entry.toFixed(2)} • SL ${picked.sl.toFixed(2)} • Lot ${picked.lot}`;
+  $("closeRiskUsd").textContent = fmtMoney(picked.risk || calcRisk(picked.entry,picked.sl,picked.lot));
+  updateCloseDerived();
+};
 
 function updateCloseDerived(){
-  const t = getTradeById($("closeSelect").value);
-  if (!t) return;
+  const tTrade = state.trades.find(x=>x.id===closingTradeId);
+  if (!tTrade){
+    $("closeMAEUsd").textContent = fmtMoney(0);
+    $("closeMFEUsd").textContent = fmtMoney(0);
+    $("closeR").textContent = "0.00R";
+    return;
+  }
 
-  const risk = t.risk || calcRisk(t.entry,t.sl,t.lot);
-  $("closeRiskUsd").innerText = fmtMoney(risk);
+  const risk = tTrade.risk || calcRisk(tTrade.entry,tTrade.sl,tTrade.lot);
 
-  const maePrice = num($("closeMAE").value);
-  const mfePrice = num($("closeMFE").value);
+  const maeP = num($("closeMAE").value);
+  const mfeP = num($("closeMFE").value);
 
-  const maeUsd = calcMAE(t.entry, maePrice, t.lot);
-  const mfeUsd = calcMFE(t.entry, mfePrice, t.lot);
+  const maeUsd = (maeP!=null) ? Math.abs(tTrade.entry - maeP) * tTrade.lot * 100 : 0;
+  const mfeUsd = (mfeP!=null) ? Math.abs(mfeP - tTrade.entry) * tTrade.lot * 100 : 0;
 
-  $("closeMAEUsd").innerText = fmtMoney(maeUsd);
-  $("closeMFEUsd").innerText = fmtMoney(mfeUsd);
+  $("closeMAEUsd").textContent = fmtMoney(maeUsd);
+  $("closeMFEUsd").textContent = fmtMoney(mfeUsd);
 
-  // R preview based on exit/pnl
   const exit = num($("closeExit").value);
   const pnlManual = num($("closePnl").value);
+
   let pnl = null;
-  if (exit!=null) pnl = calcPnL(t.direction, t.entry, exit, t.lot);
+  if (exit!=null) pnl = calcPnL(tTrade.direction, tTrade.entry, exit, tTrade.lot);
   else if (pnlManual!=null) pnl = pnlManual;
+
   const r = pnl==null ? 0 : calcR(pnl, risk);
-  $("closeR").innerText = r.toFixed(2) + "R";
+  $("closeR").textContent = r.toFixed(2) + "R";
 }
 
-function updateCloseMeta(){
-  const t = getTradeById($("closeSelect").value);
-  if (!t){
-    $("closeMeta").innerText = "";
-    return;
-  }
-  $("closeMeta").innerText = `${t.date||""} • ${t.direction} • Entry ${n2(t.entry)} • SL ${n2(t.sl)} • Lot ${t.lot} • Risk ${fmtMoney(t.risk||0)}`;
-  $("closeExit").value = "";
-  $("closePnl").value = "";
-  $("closeMAE").value = "";
-  $("closeMFE").value = "";
-  updateCloseDerived();
-}
+["closeExit","closePnl","closeMAE","closeMFE"].forEach(id=> $(id).addEventListener("input", updateCloseDerived));
 
-$("closeSelect").addEventListener("change", updateCloseMeta);
-["closeExit","closePnl","closeMAE","closeMFE"].forEach(id => $(id).addEventListener("input", updateCloseDerived));
-
-$("closeTradeBtn").onclick = () => {
-  const t = getTradeById($("closeSelect").value);
-  if (!t || t.status!=="OPEN"){
-    alert("Select an OPEN trade");
-    return;
-  }
+$("closeTradeBtn").onclick = ()=>{
+  const tTrade = state.trades.find(x=>x.id===closingTradeId);
+  if (!tTrade){ alert(t("msg_pick_first")); return; }
 
   const exit = num($("closeExit").value);
   const pnlManual = num($("closePnl").value);
+  if (exit==null && pnlManual==null){ alert(t("msg_need_exit_or_pnl")); return; }
 
-  if (exit==null && pnlManual==null){
-    alert("Exit price OR PnL is required");
-    return;
-  }
+  const risk = tTrade.risk || calcRisk(tTrade.entry,tTrade.sl,tTrade.lot);
 
-  let pnl = pnlManual;
   if (exit!=null){
-    t.exit = exit;
-    pnl = calcPnL(t.direction, t.entry, exit, t.lot);
+    tTrade.exit = exit;
+    tTrade.pnl = calcPnL(tTrade.direction, tTrade.entry, exit, tTrade.lot);
   } else {
-    t.exit = null;
+    tTrade.exit = null;
+    tTrade.pnl = pnlManual;
   }
 
-  const maePrice = num($("closeMAE").value);
-  const mfePrice = num($("closeMFE").value);
+  tTrade.status = "CLOSED";
+  tTrade.risk = risk;
+  tTrade.r = calcR(tTrade.pnl||0, risk);
+  tTrade.closedAt = Date.now();
 
-  t.mae = calcMAE(t.entry, maePrice, t.lot);
-  t.mfe = calcMFE(t.entry, mfePrice, t.lot);
-
-  t.pnl = pnl || 0;
-  t.risk = t.risk || calcRisk(t.entry,t.sl,t.lot);
-  t.r = calcR(t.pnl, t.risk);
-  t.status = "CLOSED";
-  t.closedAt = Date.now();
+  const maeP = num($("closeMAE").value);
+  const mfeP = num($("closeMFE").value);
+  tTrade.maePrice = maeP;
+  tTrade.mfePrice = mfeP;
+  tTrade.mae = (maeP!=null) ? Math.abs(tTrade.entry - maeP) * tTrade.lot * 100 : 0;
+  tTrade.mfe = (mfeP!=null) ? Math.abs(mfeP - tTrade.entry) * tTrade.lot * 100 : 0;
 
   saveState();
+
+  // reset UI to default
+  closingTradeId = null;
+  $("closeMeta").textContent = "";
+  ["closeExit","closePnl","closeMAE","closeMFE"].forEach(id=> $(id).value = "");
+  $("closeMAEUsd").textContent = fmtMoney(0);
+  $("closeMFEUsd").textContent = fmtMoney(0);
+  $("closeR").textContent = "0.00R";
+  $("closeRiskUsd").textContent = fmtMoney(0);
+
   renderDashboard();
   showScreen("dash");
 };
 
 /* =========================
-   Review (select dropdown)
+   Review trade
 ========================= */
-function hydrateReviewSelect(){
-  const sel = $("reviewSelect");
-  if (!sel) return;
+let reviewTradeId = null;
 
-  const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id)-(a.closedAt||a.id));
-  const prev = sel.value;
+$("reviewPickBtn").onclick = async ()=>{
+  const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id) - (a.closedAt||a.id));
+  if (!list.length){ alert(t("msg_pick_trade")); return; }
 
-  sel.innerHTML = list.length
-    ? list.map(t=>`<option value="${t.id}">${t.status} • ${t.date||""} • ${t.direction} • ${n2(t.entry)} → ${t.exit!=null?n2(t.exit):"—"} • ${escapeHtml(t.strategy||"")}</option>`).join("")
-    : `<option value="">No trades (filtered)</option>`;
+  const picked = await openModal(
+    t("btn_select_trade"),
+    list,
+    (tr)=> `${esc(tr.date)} • ${esc(tr.status)} • ${esc(tr.session||t("unknown"))} • ${esc(tr.strategy||"—")} • ${tr.status==="CLOSED" ? fmtMoney(tr.pnl||0) : t("open")}`
+  );
+  if (!picked) return;
 
-  if (prev && list.some(t=>String(t.id)===String(prev))) sel.value = prev;
-  updateReviewMeta();
-}
+  reviewTradeId = picked.id;
+  $("reviewMeta").textContent = `${picked.date} • ${picked.direction} • ${picked.session||t("unknown")} • ${picked.status} • ${picked.status==="CLOSED" ? fmtMoney(picked.pnl||0) : ""}`;
 
-function updateReviewMeta(){
-  const t = getTradeById($("reviewSelect").value);
-  if (!t){ $("reviewMeta").innerText=""; return; }
-  $("reviewMeta").innerText = `${t.status} • ${t.date||""} • ${t.direction} • PnL ${fmtMoney(t.pnl||0)} • R ${(t.r||0).toFixed(2)}R`;
-  $("rPlan").value = t.review?.plan || "YES";
-  $("rMistakeType").value = t.review?.mistakeType || "";
-  $("rMistake").value = t.review?.mistake || "";
-  $("rReviewNotes").value = t.review?.notes || "";
-}
+  $("rPlan").value = picked.review?.plan || "YES";
+  $("rMistakeType").value = picked.review?.mistakeType || "";
+  $("rMistake").value = picked.review?.mistake || "";
+  $("rReviewNotes").value = picked.review?.notes || "";
+};
 
-$("reviewSelect").addEventListener("change", updateReviewMeta);
+$("saveReviewBtn").onclick = ()=>{
+  const tr = state.trades.find(x=>x.id===reviewTradeId);
+  if (!tr){ alert(t("msg_pick_first")); return; }
 
-$("saveReviewBtn").onclick = () => {
-  const t = getTradeById($("reviewSelect").value);
-  if (!t){ alert("Select a trade"); return; }
-
-  t.review = {
+  tr.review = {
     plan: $("rPlan").value,
     mistakeType: $("rMistakeType").value,
-    mistake: $("rMistake").value || "",
+    mistake: ($("rMistake").value||"").trim(),
     notes: $("rReviewNotes").value || ""
   };
 
   saveState();
+
+  // reset review to empty default (כמו שביקשת)
+  reviewTradeId = null;
+  $("reviewMeta").textContent = "";
+  $("rPlan").value = "YES";
+  $("rMistakeType").value = "";
+  $("rMistake").value = "";
+  $("rReviewNotes").value = "";
+
   renderDashboard();
   showScreen("dash");
 };
 
 /* =========================
-   Edit (select dropdown)
+   Edit trade
 ========================= */
-let editingTrade = null;
+let editingTradeId = null;
 
-function hydrateEditSelect(){
-  const sel = $("editSelect");
-  if (!sel) return;
+$("editPickBtn").onclick = async ()=>{
+  const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id) - (a.closedAt||a.id));
+  if (!list.length){ alert(t("msg_pick_trade")); return; }
 
-  const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id)-(a.closedAt||a.id));
-  const prev = sel.value;
+  const picked = await openModal(
+    t("btn_select_trade"),
+    list,
+    (tr)=> `${esc(tr.date)} • ${esc(tr.status)} • ${esc(tr.direction)} • ${esc(tr.session||t("unknown"))} • ${esc(tr.strategy||"—")}`
+  );
+  if (!picked) return;
 
-  sel.innerHTML = list.length
-    ? list.map(t=>`<option value="${t.id}">${t.status} • ${t.date||""} • ${t.direction} • ${n2(t.entry)} • ${escapeHtml(t.strategy||"")}</option>`).join("")
-    : `<option value="">No trades (filtered)</option>`;
+  editingTradeId = picked.id;
+  $("editMeta").textContent = `${picked.date} • ${picked.direction} • ${picked.session||t("unknown")} • id ${picked.id}`;
 
-  if (prev && list.some(t=>String(t.id)===String(prev))) sel.value = prev;
-  loadEditTrade();
-}
+  $("eStatus").value = picked.status;
+  setSegActive("eDirSeg","dir", picked.direction);
 
-function setActiveDir(segId, dir){
-  const buttons = $$("#"+segId+" .segBtn");
-  buttons.forEach(b=>b.classList.toggle("active", b.dataset.dir===dir));
-}
+  $("eDate").value = picked.date || todayStr();
+  $("eSession").value = picked.session || "";
+  $("eEntry").value = picked.entry ?? "";
+  $("eSL").value = picked.sl ?? "";
+  $("eTP").value = picked.tp ?? "";
+  $("eLot").value = picked.lot ?? "";
+  $("eExit").value = picked.exit ?? "";
+  $("ePnl").value = (picked.exit==null ? (picked.pnl ?? "") : "");
+  $("eMAE").value = picked.maePrice ?? "";
+  $("eMFE").value = picked.mfePrice ?? "";
+  $("eStrategy").value = picked.strategy || "";
+  $("eNotes").value = picked.notes || "";
 
-function loadEditTrade(){
-  editingTrade = getTradeById($("editSelect").value);
-  if (!editingTrade){
-    $("editMeta").innerText = "";
+  updateEditDerived();
+};
+
+function updateEditDerived(){
+  const tr = state.trades.find(x=>x.id===editingTradeId);
+  if (!tr){
+    $("eRisk").textContent = fmtMoney(0);
+    $("eR").textContent = "0.00R";
+    $("eMAEUsd").textContent = fmtMoney(0);
+    $("eMFEUsd").textContent = fmtMoney(0);
     return;
   }
 
-  $("editMeta").innerText = `Editing: ${editingTrade.status} • ${editingTrade.date||""} • ${editingTrade.direction} • id ${editingTrade.id}`;
-
-  $("eStatus").value = editingTrade.status;
-  setActiveDir("eDirSeg", editingTrade.direction);
-
-  $("eDate").value = editingTrade.date || todayStr();
-  $("eSession").value = editingTrade.session || "";
-
-  $("eEntry").value = editingTrade.entry ?? "";
-  $("eSL").value = editingTrade.sl ?? "";
-  $("eTP").value = editingTrade.tp ?? "";
-  $("eLot").value = editingTrade.lot ?? "";
-
-  $("eExit").value = editingTrade.exit ?? "";
-  $("ePnl").value = (editingTrade.exit==null ? (editingTrade.pnl||"") : "");
-
-  // store MAE/MFE prices not saved; we keep "price" fields as optional, but we saved only $.
-  // allow user to directly set $ by price again: treat inputs as PRICE and compute $.
-  $("eMAE").value = "";
-  $("eMFE").value = "";
-
-  $("eStrategy").value = editingTrade.strategy || "";
-  $("eNotes").value = editingTrade.notes || "";
-
-  updateEditDerived();
-}
-
-function updateEditDerived(){
-  if (!editingTrade) return;
-
-  const entry = num($("eEntry").value);
-  const sl = num($("eSL").value);
-  const lot = num($("eLot").value);
-
-  if (entry!=null && sl!=null && lot!=null){
-    const risk = calcRisk(entry, sl, lot);
-    $("eRisk").innerText = fmtMoney(risk);
-
-    let pnl = null;
-    const exit = num($("eExit").value);
-    const pnlManual = num($("ePnl").value);
-    if (exit!=null) pnl = calcPnL(activeDir("eDirSeg"), entry, exit, lot);
-    else if (pnlManual!=null) pnl = pnlManual;
-
-    $("eR").innerText = (pnl==null ? 0 : calcR(pnl, risk)).toFixed(2) + "R";
-
-    // MAE/MFE price -> $
-    const maePrice = num($("eMAE").value);
-    const mfePrice = num($("eMFE").value);
-
-    const maeUsd = calcMAE(entry, maePrice, lot);
-    const mfeUsd = calcMFE(entry, mfePrice, lot);
-
-    $("eMAEUsd").innerText = fmtMoney(maeUsd);
-    $("eMFEUsd").innerText = fmtMoney(mfeUsd);
-  } else {
-    $("eRisk").innerText = "$0.00";
-    $("eR").innerText = "0.00R";
-    $("eMAEUsd").innerText = "$0.00";
-    $("eMFEUsd").innerText = "$0.00";
-  }
-}
-
-$("editSelect").addEventListener("change", loadEditTrade);
-["eEntry","eSL","eLot","eExit","ePnl","eMAE","eMFE"].forEach(id => $(id).addEventListener("input", updateEditDerived));
-$("eStatus").addEventListener("change", ()=>{ if(editingTrade) editingTrade.status = $("eStatus").value; });
-
-$("saveEditBtn").onclick = () => {
-  if (!editingTrade){ alert("Select a trade"); return; }
-
-  const dir = activeDir("eDirSeg");
+  const dir = getSegValue("eDirSeg","dir", tr.direction || "LONG");
   const entry = num($("eEntry").value);
   const sl = num($("eSL").value);
   const lot = num($("eLot").value);
 
   if (entry==null || sl==null || lot==null){
-    alert("Entry/SL/Lot required");
+    $("eRisk").textContent = fmtMoney(0);
+    $("eR").textContent = "0.00R";
+    $("eMAEUsd").textContent = fmtMoney(0);
+    $("eMFEUsd").textContent = fmtMoney(0);
     return;
   }
 
-  editingTrade.status = $("eStatus").value;
-  editingTrade.direction = dir;
-  editingTrade.date = $("eDate").value || todayStr();
-  editingTrade.session = $("eSession").value || "";
+  const risk = calcRisk(entry, sl, lot);
+  $("eRisk").textContent = fmtMoney(risk);
 
-  editingTrade.entry = entry;
-  editingTrade.sl = sl;
-  editingTrade.lot = lot;
-  editingTrade.tp = num($("eTP").value);
+  const maeP = num($("eMAE").value);
+  const mfeP = num($("eMFE").value);
+  const maeUsd = (maeP!=null) ? Math.abs(entry - maeP) * lot * 100 : 0;
+  const mfeUsd = (mfeP!=null) ? Math.abs(mfeP - entry) * lot * 100 : 0;
+  $("eMAEUsd").textContent = fmtMoney(maeUsd);
+  $("eMFEUsd").textContent = fmtMoney(mfeUsd);
 
   const exit = num($("eExit").value);
   const pnlManual = num($("ePnl").value);
 
-  editingTrade.risk = calcRisk(entry, sl, lot);
+  let pnl = 0;
+  if (exit!=null) pnl = calcPnL(dir, entry, exit, lot);
+  else if (pnlManual!=null) pnl = pnlManual;
 
-  if (exit!=null){
-    editingTrade.exit = exit;
-    editingTrade.pnl = calcPnL(dir, entry, exit, lot);
+  $("eR").textContent = calcR(pnl, risk).toFixed(2) + "R";
+}
+
+["eEntry","eSL","eLot","eExit","ePnl","eMAE","eMFE"].forEach(id=> $(id).addEventListener("input", updateEditDerived));
+$("eStatus").addEventListener("change", updateEditDerived);
+
+$("saveEditBtn").onclick = ()=>{
+  const tr = state.trades.find(x=>x.id===editingTradeId);
+  if (!tr){ alert(t("msg_pick_first")); return; }
+
+  const dir = getSegValue("eDirSeg","dir","LONG");
+  const entry = num($("eEntry").value);
+  const sl = num($("eSL").value);
+  const lot = num($("eLot").value);
+  if (entry==null || sl==null || lot==null){ alert(t("msg_need_entry_sl_lot")); return; }
+
+  tr.status = $("eStatus").value;
+  tr.direction = dir;
+  tr.date = $("eDate").value || todayStr();
+  tr.session = $("eSession").value || "";
+
+  tr.entry = entry;
+  tr.sl = sl;
+  tr.lot = lot;
+  tr.tp = num($("eTP").value);
+
+  tr.risk = calcRisk(entry, sl, lot);
+
+  const exit = num($("eExit").value);
+  const pnlManual = num($("ePnl").value);
+
+  if (tr.status === "CLOSED"){
+    if (exit!=null){
+      tr.exit = exit;
+      tr.pnl = calcPnL(dir, entry, exit, lot);
+    } else {
+      tr.exit = null;
+      tr.pnl = pnlManual ?? (tr.pnl||0);
+    }
+    tr.r = calcR(tr.pnl||0, tr.risk);
+    tr.closedAt = tr.closedAt || Date.now();
   } else {
-    editingTrade.exit = null;
-    editingTrade.pnl = pnlManual || 0;
+    tr.exit = null;
+    tr.pnl = 0;
+    tr.r = 0;
   }
 
-  // MAE/MFE from PRICE inputs -> $
-  const maePrice = num($("eMAE").value);
-  const mfePrice = num($("eMFE").value);
-  if (maePrice!=null) editingTrade.mae = calcMAE(entry, maePrice, lot);
-  if (mfePrice!=null) editingTrade.mfe = calcMFE(entry, mfePrice, lot);
+  const maeP = num($("eMAE").value);
+  const mfeP = num($("eMFE").value);
+  tr.maePrice = maeP;
+  tr.mfePrice = mfeP;
+  tr.mae = (maeP!=null) ? Math.abs(entry - maeP) * lot * 100 : 0;
+  tr.mfe = (mfeP!=null) ? Math.abs(mfeP - entry) * lot * 100 : 0;
 
-  editingTrade.r = calcR(editingTrade.pnl, editingTrade.risk);
-
-  editingTrade.strategy = ($("eStrategy").value||"").trim();
-  editingTrade.notes = $("eNotes").value || "";
+  tr.strategy = ($("eStrategy").value||"").trim();
+  tr.notes = $("eNotes").value || "";
 
   saveState();
+
+  // reset edit
+  editingTradeId = null;
+  $("editMeta").textContent = "";
+
   renderDashboard();
   showScreen("dash");
 };
 
 /* =========================
-   All Trades (full) + Delete
+   Analytics helpers
 ========================= */
-function renderAllTrades(){
-  const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id)-(a.closedAt||a.id));
-  $("allTradesList").innerHTML = list.map(t=>{
-    const review = t.review || {};
-    const reviewLine = review.plan || review.mistakeType || review.mistake || review.notes
-      ? `${review.plan||""}${review.mistakeType?(" • "+review.mistakeType):""}${review.mistake?(" • "+escapeHtml(review.mistake)):""}`
-      : "—";
-
-    return `
-    <div class="item">
-      <div class="itemTop">
-        <span>${t.status} • ${t.date||""} • ${t.direction} • ${t.session||"—"}</span>
-        <span>${t.status==="CLOSED" ? fmtMoney(t.pnl||0) : "OPEN"}</span>
-      </div>
-
-      <div class="kv"><span class="k">Setup:</span> <span class="v">${escapeHtml(t.strategy||"—")}</span></div>
-      <div class="kv"><span class="k">Entry / Exit:</span> <span class="v">${n2(t.entry)} → ${t.exit!=null?n2(t.exit):"—"}</span></div>
-      <div class="kv"><span class="k">SL / TP:</span> <span class="v">${n2(t.sl)} / ${t.tp!=null?n2(t.tp):"—"}</span> • <span class="k">Lot:</span> <span class="v">${t.lot}</span></div>
-
-      <div class="kv">
-        <span class="k">Risk:</span> <span class="v">${fmtMoney(t.risk||0)}</span> •
-        <span class="k">R:</span> <span class="v">${(t.r||0).toFixed(2)}R</span>
-      </div>
-
-      <div class="kv">
-        <span class="k">MAE:</span> <span class="v">${fmtMoney(t.mae||0)}</span> •
-        <span class="k">MFE:</span> <span class="v">${fmtMoney(t.mfe||0)}</span>
-      </div>
-
-      <div class="kv"><span class="k">Review:</span> <span class="v">${reviewLine}</span></div>
-
-      <div class="row2" style="margin-top:10px;">
-        <button class="btn ghost" type="button" onclick="jumpEdit('${t.id}')">Edit</button>
-        <button class="btn danger" type="button" onclick="deleteTrade('${t.id}')">Delete</button>
-      </div>
-    </div>`;
-  }).join("") || `<div class="kv">No trades in this period.</div>`;
+function sessionAgg(closed){
+  const map = {
+    Asia:{pnl:0,n:0,w:0,rSum:0},
+    London:{pnl:0,n:0,w:0,rSum:0},
+    NY:{pnl:0,n:0,w:0,rSum:0},
+    Unknown:{pnl:0,n:0,w:0,rSum:0}
+  };
+  closed.forEach(t=>{
+    const s = (t.session==="Asia"||t.session==="London"||t.session==="NY") ? t.session : "Unknown";
+    map[s].pnl += (t.pnl||0);
+    map[s].n += 1;
+    if ((t.pnl||0) > 0) map[s].w += 1;
+    map[s].rSum += (t.r||0);
+  });
+  Object.values(map).forEach(o=>{
+    o.wr = o.n ? Math.round((o.w/o.n)*100) : 0;
+    o.avgR = o.n ? (o.rSum/o.n) : 0;
+  });
+  return map;
 }
 
-window.deleteTrade = function(id){
-  if (!confirm("Delete this trade?")) return;
-  state.trades = state.trades.filter(t=>String(t.id)!==String(id));
+function topSetupAgg(closed){
+  const m = new Map();
+  closed.forEach(t=>{
+    const key = (t.strategy||"").trim() || "";
+    if (!key) return;
+    if (!m.has(key)) m.set(key, {name:key, pnl:0, n:0, w:0, rSum:0});
+    const o = m.get(key);
+    o.pnl += (t.pnl||0);
+    o.n += 1;
+    if ((t.pnl||0) > 0) o.w += 1;
+    o.rSum += (t.r||0);
+  });
+  const arr = Array.from(m.values()).map(o=>({
+    ...o, wr: o.n ? Math.round((o.w/o.n)*100) : 0, avgR: o.n ? o.rSum/o.n : 0
+  }));
+  arr.sort((a,b)=> b.pnl - a.pnl);
+  return arr;
+}
+
+function streakInfo(closed){
+  const arr = closed.slice().sort((a,b)=> (a.closedAt||a.id) - (b.closedAt||b.id));
+  let bestW=0,bestL=0;
+  let runType=null,runLen=0;
+
+  arr.forEach(t=>{
+    const type = (t.pnl||0) >= 0 ? "W" : "L";
+    if (type === runType) runLen++;
+    else { runType = type; runLen = 1; }
+    if (type==="W") bestW = Math.max(bestW, runLen);
+    else bestL = Math.max(bestL, runLen);
+  });
+
+  let currentType=null,currentLen=0;
+  for (let i=arr.length-1;i>=0;i--){
+    const type = (arr[i].pnl||0) >= 0 ? "W" : "L";
+    if (!currentType){ currentType=type; currentLen=1; }
+    else if (type===currentType) currentLen++;
+    else break;
+  }
+  return {currentType,currentLen,bestW,bestL};
+}
+
+function disciplineStats(closed){
+  const bad = closed.filter(t => (t.review?.plan==="NO") || (t.review?.mistakeType));
+  const cost = bad.reduce((a,t)=> a + (t.pnl||0), 0);
+
+  const byType = {};
+  bad.forEach(t=>{
+    const k = t.review?.mistakeType || (t.review?.plan==="NO" ? "Plan NO" : "Other");
+    byType[k] = (byType[k]||0) + (t.pnl||0);
+  });
+  const top = Object.entries(byType).sort((a,b)=> b[1]-a[1])[0];
+  return {cost, n: bad.length, topType: top ? top[0] : "—"};
+}
+
+/* =========================
+   Render Dashboard
+========================= */
+function renderDashboard(){
+  const closed = filteredClosed();
+  const open = filteredOpen();
+
+  // totals
+  const totalPnL = closed.reduce((a,t)=>a+(t.pnl||0),0);
+  const wins = closed.filter(t=>(t.pnl||0)>0).length;
+  const losses = closed.filter(t=>(t.pnl||0)<0).length;
+  const winRate = closed.length ? Math.round((wins/closed.length)*100) : 0;
+
+  $("statPnl").textContent = fmtMoney(totalPnL);
+  $("statPnlMeta").textContent = `${closed.length} ${state.language==="HE" ? "סגורות" : "closed"}`;
+
+  $("statWinRate").textContent = `${winRate}%`;
+  $("statWins").textContent = `${wins}W / ${losses}L`;
+
+  const avgR = closed.reduce((a,t)=>a+(t.r||0),0) / (closed.length||1);
+  $("statAvgR").textContent = avgR.toFixed(2)+"R";
+  $("statAvgRMeta").textContent = `${closed.length} ${state.language==="HE" ? "עסקאות" : "trades"}`;
+
+  const openRisk = open.reduce((a,t)=>a+(t.risk||0),0);
+  $("statOpenRisk").textContent = fmtMoney(openRisk);
+  $("statOpenCount").textContent = `${open.length} ${state.language==="HE" ? "פתוחות" : "open"}`;
+
+  const maeAvg = closed.reduce((a,t)=>a+(t.mae||0),0)/(closed.length||1);
+  const mfeAvg = closed.reduce((a,t)=>a+(t.mfe||0),0)/(closed.length||1);
+  $("statMaeAvg").textContent = fmtMoney(maeAvg);
+  $("statMfeAvg").textContent = fmtMoney(mfeAvg);
+
+  const best = closed.length ? Math.max(...closed.map(t=>t.pnl||0)) : 0;
+  const worst = closed.length ? Math.min(...closed.map(t=>t.pnl||0)) : 0;
+  $("statBestWorst").textContent = `${fmtMoney(best)} / ${fmtMoney(worst)}`;
+
+  // streak
+  const st = streakInfo(closed);
+  if (!closed.length){
+    $("statStreak").textContent = "—";
+    $("statStreakMeta").textContent = "";
+  } else {
+    $("statStreak").textContent = `${st.currentType}${st.currentLen}`;
+    $("statStreakMeta").textContent = `Best W${st.bestW} / Best L${st.bestL}`;
+  }
+
+  // discipline
+  const ds = disciplineStats(closed);
+  $("statDiscipline").textContent = fmtMoney(ds.cost);
+  $("statDisciplineMeta").textContent = ds.n ? `${ds.n} • ${ds.topType}` : "0";
+
+  // top setup
+  const setups = topSetupAgg(closed);
+  if (!setups.length){
+    $("statTopSetup").textContent = "—";
+    $("statTopSetupHint").textContent = "";
+  } else {
+    const s = setups[0];
+    $("statTopSetup").textContent = s.name;
+    $("statTopSetupHint").textContent = `${fmtMoney(s.pnl)} • ${s.n} • ${s.wr}% • ${s.avgR.toFixed(2)}R`;
+  }
+
+  // sessions
+  const sess = sessionAgg(closed);
+  function setSess(pnlId, metaId, key){
+    const o = sess[key];
+    $(pnlId).textContent = fmtMoney(o.pnl);
+    $(metaId).textContent = `${o.n} • ${o.wr}% • ${o.avgR.toFixed(2)}R`;
+  }
+  setSess("sessAsia","sessAsiaMeta","Asia");
+  setSess("sessLondon","sessLondonMeta","London");
+  setSess("sessNY","sessNYMeta","NY");
+  setSess("sessU","sessUMeta","Unknown");
+
+  // recent closed list
+  const recent = closed.slice().sort((a,b)=> (b.closedAt||b.id)-(a.closedAt||a.id)).slice(0,6);
+  $("tradesList").innerHTML = recent.length ? recent.map(tTrade=>{
+    return `
+      <div class="item">
+        <div class="itemTop">
+          <span>${esc(tTrade.date)} • ${esc(tTrade.direction)} • ${esc(tTrade.session||t("unknown"))}</span>
+          <span>${esc(fmtMoney(tTrade.pnl||0))}</span>
+        </div>
+        <div class="kv"><span class="k">${esc(t("label_setup"))}:</span> <span class="v">${esc(tTrade.strategy||"—")}</span></div>
+        <div class="kv"><span class="k">${esc(t("label_entry"))}/${esc(t("label_exit"))}:</span> <span class="v">${tTrade.entry.toFixed(2)} → ${tTrade.exit!=null ? tTrade.exit.toFixed(2) : "—"}</span></div>
+        <div class="kv"><span class="k">R:</span> <span class="v">${(tTrade.r||0).toFixed(2)}R</span> • <span class="k">MAE:</span> <span class="v">${esc(fmtMoney(tTrade.mae||0))}</span> • <span class="k">MFE:</span> <span class="v">${esc(fmtMoney(tTrade.mfe||0))}</span></div>
+      </div>
+    `;
+  }).join("") : `<div class="kv">${esc(t("msg_no_closed"))}</div>`;
+}
+
+/* =========================
+   All Trades table + delete/edit shortcut
+========================= */
+function renderAllTrades(){
+  const list = filteredTrades().slice().sort((a,b)=> (b.closedAt||b.id) - (a.closedAt||a.id));
+
+  if (!list.length){
+    $("allTradesList").innerHTML = `<div class="kv">${esc(t("msg_no_trades"))}</div>`;
+    return;
+  }
+
+  const headers = state.language==="HE"
+    ? ["תאריך","סטטוס","כיוון","סשן","סטאפ","כניסה","יציאה","סטופ","לוט","סיכון","PnL","R","MAE","MFE","סקירה","פעולות"]
+    : ["Date","Status","Dir","Session","Setup","Entry","Exit","SL","Lot","Risk","PnL","R","MAE","MFE","Review","Actions"];
+
+  const rows = list.map(tr=>{
+    const reviewLine = tr.review
+      ? `${tr.review.plan||""}${tr.review.mistakeType?(" • "+tr.review.mistakeType):""}${tr.review.mistake?(" • "+tr.review.mistake):""}`
+      : "";
+    const statusPill = tr.status==="CLOSED"
+      ? `<span class="pill neu">${esc(t("closed"))}</span>`
+      : `<span class="pill warn">${esc(t("open"))}</span>`;
+
+    return `
+      <tr>
+        <td>${esc(tr.date||"")}</td>
+        <td>${statusPill}</td>
+        <td>${esc(tr.direction)}</td>
+        <td>${esc(tr.session||t("unknown"))}</td>
+        <td>${esc(tr.strategy||"—")}</td>
+        <td>${tr.entry!=null?tr.entry.toFixed(2):"—"}</td>
+        <td>${tr.exit!=null?tr.exit.toFixed(2):"—"}</td>
+        <td>${tr.sl!=null?tr.sl.toFixed(2):"—"}</td>
+        <td>${tr.lot!=null?tr.lot:"—"}</td>
+        <td>${esc(fmtMoney(tr.risk||0))}</td>
+        <td>${tr.status==="CLOSED" ? pillPnL(tr.pnl||0) : "—"}</td>
+        <td>${tr.status==="CLOSED" ? (tr.r||0).toFixed(2)+"R" : "—"}</td>
+        <td>${esc(fmtMoney(tr.mae||0))}</td>
+        <td>${esc(fmtMoney(tr.mfe||0))}</td>
+        <td>${esc(reviewLine||"—")}</td>
+        <td class="actions">
+          <button class="miniBtn" onclick="window.__editFromAll(${tr.id})">${esc(t("tab_edit"))}</button>
+          <button class="miniBtn danger" onclick="window.__deleteTrade(${tr.id})">${esc(state.language==="HE"?"מחק":"Delete")}</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  $("allTradesList").innerHTML = `
+    <div class="tableWrap">
+      <table class="table">
+        <thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+window.__deleteTrade = function(id){
+  state.trades = state.trades.filter(t=>t.id!==id);
   saveState();
   renderDashboard();
   renderAllTrades();
 };
 
-window.jumpEdit = function(id){
+window.__editFromAll = function(id){
+  const tr = state.trades.find(x=>x.id===id);
+  if (!tr) return;
   showScreen("edit");
-  $("editSelect").value = String(id);
-  loadEditTrade();
+
+  editingTradeId = tr.id;
+  $("editMeta").textContent = `${tr.date} • ${tr.direction} • ${tr.session||t("unknown")} • id ${tr.id}`;
+
+  $("eStatus").value = tr.status;
+  setSegActive("eDirSeg","dir", tr.direction);
+
+  $("eDate").value = tr.date || todayStr();
+  $("eSession").value = tr.session || "";
+  $("eEntry").value = tr.entry ?? "";
+  $("eSL").value = tr.sl ?? "";
+  $("eTP").value = tr.tp ?? "";
+  $("eLot").value = tr.lot ?? "";
+  $("eExit").value = tr.exit ?? "";
+  $("ePnl").value = (tr.exit==null ? (tr.pnl ?? "") : "");
+  $("eMAE").value = tr.maePrice ?? "";
+  $("eMFE").value = tr.mfePrice ?? "";
+  $("eStrategy").value = tr.strategy || "";
+  $("eNotes").value = tr.notes || "";
+
+  updateEditDerived();
 };
 
 /* =========================
@@ -867,67 +1024,72 @@ $("hidePnlToggle").onchange = (e)=>{
 };
 
 $("exportJsonBtn").onclick = async ()=>{
+  const json = JSON.stringify(state, null, 2);
   try{
-    await navigator.clipboard.writeText(JSON.stringify(state,null,2));
-    $("importMsg").innerText = "Exported to clipboard ✅";
+    await navigator.clipboard.writeText(json);
+    $("importMsg").textContent = t("msg_export_ok");
   }catch(e){
-    $("importMsg").innerText = "Copy failed — select and copy manually.";
+    $("importMsg").textContent = t("msg_export_fail");
+    // fallback: put into textarea for manual copy
+    $("importJsonText").value = json;
   }
 };
 
 $("importReplaceBtn").onclick = ()=>{
   try{
-    const obj = JSON.parse($("importJsonText").value);
-    if (!obj || typeof obj !== "object") throw new Error("bad");
+    const obj = JSON.parse(($("importJsonText").value||"").trim());
+    if (!obj || typeof obj !== "object" || !Array.isArray(obj.trades)) throw new Error("bad");
     state = { ...state, ...obj };
     saveState();
-    $("importMsg").innerText = "Imported (Replace) ✅";
-    renderDashboard(); renderAllTrades(); renderSnapshot();
+    $("importMsg").textContent = t("msg_import_ok");
+    applyLanguage();
   }catch(e){
-    $("importMsg").innerText = "Invalid JSON ❌";
+    $("importMsg").textContent = t("msg_import_bad");
   }
 };
 
 $("importMergeBtn").onclick = ()=>{
   try{
-    const obj = JSON.parse($("importJsonText").value);
+    const obj = JSON.parse(($("importJsonText").value||"").trim());
     const incoming = Array.isArray(obj.trades) ? obj.trades : [];
-    state.trades = [...state.trades, ...incoming];
+    const ids = new Set(state.trades.map(t=>t.id));
+    incoming.forEach(tr => { if (!ids.has(tr.id)) state.trades.push(tr); });
     saveState();
-    $("importMsg").innerText = "Imported (Merge) ✅";
-    renderDashboard(); renderAllTrades(); renderSnapshot();
+    $("importMsg").textContent = t("msg_merge_ok");
+    applyLanguage();
   }catch(e){
-    $("importMsg").innerText = "Invalid JSON ❌";
+    $("importMsg").textContent = t("msg_import_bad");
   }
 };
 
 $("resetAllBtn").onclick = ()=>{
-  const c = prompt('Type DELETE to confirm');
+  const c = prompt(t("msg_reset_confirm"));
   if (c === "DELETE"){
     localStorage.removeItem(STORAGE_KEY);
     location.reload();
   }
 };
 
-/* Language toggle (saved only) */
-function setLangButtons(){
-  $$("#langSeg .segBtn").forEach(b=>b.classList.toggle("active", b.dataset.lang===state.language));
+/* language seg */
+function setLangSeg(){
+  $$("#langSeg .segBtn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.lang === state.language);
+  });
 }
-setLangButtons();
-$("langSeg").addEventListener("click",(e)=>{
-  const b = e.target.closest(".segBtn");
-  if (!b) return;
-  state.language = b.dataset.lang;
+wireSeg("langSeg","lang",(val)=>{
+  state.language = val;
   saveState();
-  setLangButtons();
+  setLangSeg();
+  applyLanguage();
 });
+setLangSeg();
 
 /* =========================
-   Snapshot (share screen)
+   Snapshot
 ========================= */
 $("shareSnapshotBtn").onclick = ()=> showScreen("snapshot");
 $("snapBackBtn").onclick = ()=> showScreen("dash");
-$("snapTipBtn").onclick = ()=> alert("Take a screenshot of this screen and share it.");
+$("snapTipBtn").onclick = ()=> alert(t("msg_share_tip"));
 
 function renderSnapshot(){
   const closed = filteredClosed();
@@ -935,46 +1097,54 @@ function renderSnapshot(){
 
   const totalPnL = closed.reduce((a,t)=>a+(t.pnl||0),0);
   const wins = closed.filter(t=>(t.pnl||0)>0).length;
-  const wr = closed.length ? wins/closed.length*100 : 0;
+  const winRate = closed.length ? Math.round((wins/closed.length)*100) : 0;
   const avgR = closed.reduce((a,t)=>a+(t.r||0),0)/(closed.length||1);
 
   const maeAvg = closed.reduce((a,t)=>a+(t.mae||0),0)/(closed.length||1);
   const mfeAvg = closed.reduce((a,t)=>a+(t.mfe||0),0)/(closed.length||1);
 
+  const best = closed.length ? Math.max(...closed.map(t=>t.pnl||0)) : 0;
+  const worst = closed.length ? Math.min(...closed.map(t=>t.pnl||0)) : 0;
+
   const st = streakInfo(closed);
   const ds = disciplineStats(closed);
-  const setups = setupAgg(closed);
+  const setups = topSetupAgg(closed);
   const topSetup = setups[0];
 
-  $("snapPeriod").innerText = `Snapshot • ${state.period}`;
+  $("snapPeriod").textContent = `${t("tab_snapshot")} • ${state.period}`;
+
+  const openRisk = open.reduce((a,t)=>a+(t.risk||0),0);
 
   const kpis = [
-    ["Total PnL", fmtMoney(totalPnL)],
-    ["Trades", String(closed.length)],
-    ["Win Rate", fmtPct(wr)],
-    ["Avg R", avgR.toFixed(2)+"R"],
-    ["Open Risk", fmtMoney(open.reduce((a,t)=>a+(t.risk||0),0))],
-    ["MAE Avg", fmtMoney(maeAvg)],
-    ["MFE Avg", fmtMoney(mfeAvg)],
-    ["Streak", closed.length ? `${st.current.type}${st.current.len}` : "—"],
-    ["Discipline", fmtMoney(ds.cost)],
-    ["Top Setup", topSetup ? topSetup.name : "—"],
+    [t("k_total_pnl"), fmtMoney(totalPnL)],
+    [t("k_winrate"), `${winRate}%`],
+    [t("k_avg_r"), avgR.toFixed(2)+"R"],
+    [t("k_open_risk"), fmtMoney(openRisk)],
+    [t("k_mae_avg"), fmtMoney(maeAvg)],
+    [t("k_mfe_avg"), fmtMoney(mfeAvg)],
+    [t("k_best_worst"), `${fmtMoney(best)} / ${fmtMoney(worst)}`],
+    [t("k_streak"), closed.length ? `${st.currentType}${st.currentLen}` : "—"],
+    [t("k_discipline_cost"), fmtMoney(ds.cost)],
+    [t("k_top_setup"), topSetup ? `${topSetup.name}` : "—"],
   ];
 
   $("snapGrid").innerHTML = kpis.map(([k,v])=>`
     <div class="snapKpi">
-      <div class="snapK">${k}</div>
-      <div class="snapV">${escapeHtml(v)}</div>
+      <div class="snapK">${esc(k)}</div>
+      <div class="snapV">${esc(v)}</div>
     </div>
   `).join("");
 
   const sess = sessionAgg(closed);
   const rows = [
-    sess["Asia"], sess["London"], sess["NY"], sess[""]
-  ].map(o=>`
+    ["Asia", sess.Asia],
+    ["London", sess.London],
+    ["NY", sess.NY],
+    ["Unknown", sess.Unknown]
+  ].map(([name,stt])=>`
     <div class="snapSessRow">
-      <span>${o.name}</span>
-      <span>${fmtMoney(o.pnl)} • ${o.n} • ${fmtPct(o.wr)}</span>
+      <span><b>${esc(name==="Unknown"?t("unknown"):name)}</b> • ${stt.n} • ${stt.wr}%</span>
+      <span>${esc(fmtMoney(stt.pnl))}</span>
     </div>
   `).join("");
 
@@ -984,29 +1154,18 @@ function renderSnapshot(){
 /* =========================
    Init
 ========================= */
-(function initDefaults(){
-  // dates default
-  if ($("fDate")) $("fDate").value = todayStr();
-  if ($("cDate")) $("cDate").value = todayStr();
+(function init(){
+  // default dates
+  $("fDate").value = $("fDate").value || todayStr();
+  $("cDate").value = $("cDate").value || todayStr();
 
-  // Hide pnl default OFF
-  $("hidePnlToggle").checked = !!state.hidePnl;
+  // initial risk previews
+  updateNewRisk();
+  updateChecklistRisk();
 
-  updateNewRiskPreview();
-  updateChecklistRiskPreview();
+  // apply language (also triggers renders)
+  applyLanguage();
 
-  hydrateCloseSelect();
-  hydrateReviewSelect();
-  hydrateEditSelect();
-
-  renderDashboard();
-  renderAllTrades();
-  renderSnapshot();
-
+  // initial screen
   showScreen("dash");
 })();
-
-/* =========================
-   Close screen helper resets
-========================= */
-function hydrateReviewSelect(){ /* overwritten above by hoist? (avoid) */ }

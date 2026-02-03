@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>AdigaFX Trade Journal</title>
 
   <link rel="icon" href="adigafx_icon.png"/>
-  <link rel="stylesheet" href="styles.css?v=35"/>
+  <link rel="stylesheet" href="styles.css?v=36"/>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -18,63 +18,108 @@
         <img src="adigafx_logo_128.png" class="logo" alt="AdigaFX"/>
         <div>
           <div class="title">AdigaFX</div>
-          <div class="subtitle">XAUUSD • Trade Journal (Local)</div>
+          <div class="subtitle" data-i18n="subtitle">XAUUSD • Trade Journal (Local)</div>
         </div>
       </div>
-      <button class="btn ghost small" id="openSettingsBtn" type="button">⚙️</button>
+      <button class="btn ghost small" id="openSettingsBtn" type="button" aria-label="Settings">⚙️</button>
     </header>
 
-    <nav class="tabs">
-      <button class="tab active" data-route="dash" type="button">Home</button>
-      <button class="tab" data-route="check" type="button">Checklist</button>
-      <button class="tab" data-route="new" type="button">New</button>
-      <button class="tab" data-route="close" type="button">Close</button>
-      <button class="tab" data-route="review" type="button">Review</button>
-      <button class="tab" data-route="all" type="button">All</button>
-      <button class="tab" data-route="edit" type="button">Edit</button>
-      <button class="tab" data-route="settings" type="button">Settings</button>
-      <button class="tab" data-route="snapshot" type="button">Snapshot</button>
+    <nav class="tabs" aria-label="Navigation">
+      <button class="tab active" data-route="dash" type="button" data-i18n="tab_home">Home</button>
+      <button class="tab" data-route="check" type="button" data-i18n="tab_checklist">Checklist</button>
+      <button class="tab" data-route="new" type="button" data-i18n="tab_new">New</button>
+      <button class="tab" data-route="close" type="button" data-i18n="tab_close">Close</button>
+      <button class="tab" data-route="review" type="button" data-i18n="tab_review">Review</button>
+      <button class="tab" data-route="all" type="button" data-i18n="tab_all">All</button>
+      <button class="tab" data-route="edit" type="button" data-i18n="tab_edit">Edit</button>
+      <button class="tab" data-route="settings" type="button" data-i18n="tab_settings">Settings</button>
+      <button class="tab" data-route="snapshot" type="button" data-i18n="tab_snapshot">Snapshot</button>
     </nav>
 
     <!-- HOME -->
     <section class="screen active" id="screen-dash">
-      <div class="seg" id="timeSeg">
-        <button class="segBtn active" type="button" data-time="ALL">ALL</button>
-        <button class="segBtn" type="button" data-time="TODAY">TODAY</button>
-        <button class="segBtn" type="button" data-time="WEEK">WEEK</button>
-        <button class="segBtn" type="button" data-time="MONTH">MONTH</button>
+      <div class="seg" id="timeSeg" aria-label="Time filter">
+        <button class="segBtn active" type="button" data-time="ALL" data-i18n="time_all">ALL</button>
+        <button class="segBtn" type="button" data-time="TODAY" data-i18n="time_today">TODAY</button>
+        <button class="segBtn" type="button" data-time="WEEK" data-i18n="time_week">WEEK</button>
+        <button class="segBtn" type="button" data-time="MONTH" data-i18n="time_month">MONTH</button>
       </div>
 
       <div class="panel">
-        <div class="panelTitle">Overview</div>
+        <div class="panelTitle" data-i18n="overview_title">Overview</div>
+
         <div class="dashGrid">
-          <div class="dashCard"><div class="k">Total PnL</div><div class="big" id="statPnl">$0.00</div><div class="k" id="statPnlMeta"></div></div>
-          <div class="dashCard"><div class="k">Win Rate</div><div class="big" id="statWinRate">0%</div><div class="k" id="statWins"></div></div>
-          <div class="dashCard"><div class="k">Avg R</div><div class="big" id="statAvgR">0.00R</div><div class="k" id="statExp"></div></div>
-          <div class="dashCard"><div class="k">Open Risk</div><div class="big" id="statOpenRisk">$0.00</div><div class="k" id="statOpenCount"></div></div>
+          <div class="dashCard">
+            <div class="k" data-i18n="k_total_pnl">Total PnL</div>
+            <div class="big" id="statPnl">$0.00</div>
+            <div class="hint" id="statPnlMeta"></div>
+          </div>
 
-          <div class="dashCard"><div class="k">MAE Avg</div><div class="big" id="statMaeAvg">$0.00</div></div>
-          <div class="dashCard"><div class="k">MFE Avg</div><div class="big" id="statMfeAvg">$0.00</div></div>
-          <div class="dashCard"><div class="k">Best / Worst</div><div class="big" id="statBestWorst">$0 / $0</div></div>
-          <div class="dashCard"><div class="k">Streak</div><div class="big" id="statStreak">—</div><div class="k" id="statStreakMeta"></div></div>
+          <div class="dashCard">
+            <div class="k" data-i18n="k_winrate">Win Rate</div>
+            <div class="big" id="statWinRate">0%</div>
+            <div class="hint" id="statWins"></div>
+          </div>
 
-          <div class="dashCard"><div class="k">Discipline Cost</div><div class="big" id="statDiscipline">$0.00</div><div class="k" id="statDisciplineMeta"></div></div>
-          <div class="dashCard"><div class="k">Top Setup</div><div class="big" id="statTopSetup">—</div><div class="k" id="statTopSetupHint"></div></div>
+          <div class="dashCard">
+            <div class="k" data-i18n="k_avg_r">Avg R</div>
+            <div class="big" id="statAvgR">0.00R</div>
+            <div class="hint" id="statAvgRMeta"></div>
+          </div>
+
+          <div class="dashCard">
+            <div class="k" data-i18n="k_open_risk">Open Risk</div>
+            <div class="big" id="statOpenRisk">$0.00</div>
+            <div class="hint" id="statOpenCount"></div>
+          </div>
+
+          <div class="dashCard">
+            <div class="k" data-i18n="k_mae_avg">MAE Avg</div>
+            <div class="big" id="statMaeAvg">$0.00</div>
+          </div>
+
+          <div class="dashCard">
+            <div class="k" data-i18n="k_mfe_avg">MFE Avg</div>
+            <div class="big" id="statMfeAvg">$0.00</div>
+          </div>
+
+          <div class="dashCard">
+            <div class="k" data-i18n="k_best_worst">Best / Worst</div>
+            <div class="big" id="statBestWorst">$0 / $0</div>
+          </div>
+
+          <div class="dashCard">
+            <div class="k" data-i18n="k_streak">Streak</div>
+            <div class="big" id="statStreak">—</div>
+            <div class="hint" id="statStreakMeta"></div>
+          </div>
+
+          <div class="dashCard">
+            <div class="k" data-i18n="k_discipline_cost">Discipline Cost</div>
+            <div class="big" id="statDiscipline">$0.00</div>
+            <div class="hint" id="statDisciplineMeta"></div>
+          </div>
+
+          <div class="dashCard">
+            <div class="k" data-i18n="k_top_setup">Top Setup</div>
+            <div class="big" id="statTopSetup">—</div>
+            <div class="hint" id="statTopSetupHint"></div>
+          </div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panelTitle">Sessions</div>
+        <div class="panelTitle" data-i18n="sessions_title">Sessions</div>
         <div class="dashGrid">
-          <div class="dashCard"><div class="k">Asia</div><div class="big" id="sessAsia">$0</div><div class="k" id="sessAsiaMeta"></div></div>
-          <div class="dashCard"><div class="k">London</div><div class="big" id="sessLondon">$0</div><div class="k" id="sessLondonMeta"></div></div>
-          <div class="dashCard"><div class="k">New York</div><div class="big" id="sessNY">$0</div><div class="k" id="sessNYMeta"></div></div>
-          <div class="dashCard"><div class="k">Unknown</div><div class="big" id="sessU">$0</div><div class="k" id="sessUMeta"></div></div>
+          <div class="dashCard"><div class="k">Asia</div><div class="big" id="sessAsia">$0</div><div class="hint" id="sessAsiaMeta"></div></div>
+          <div class="dashCard"><div class="k">London</div><div class="big" id="sessLondon">$0</div><div class="hint" id="sessLondonMeta"></div></div>
+          <div class="dashCard"><div class="k">New York</div><div class="big" id="sessNY">$0</div><div class="hint" id="sessNYMeta"></div></div>
+          <div class="dashCard"><div class="k" data-i18n="unknown">Unknown</div><div class="big" id="sessU">$0</div><div class="hint" id="sessUMeta"></div></div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panelTitle">Recent (filtered)</div>
+        <div class="panelTitle" data-i18n="recent_title">Recent (filtered)</div>
         <div id="tradesList" class="list"></div>
       </div>
     </section>
@@ -82,23 +127,26 @@
     <!-- CHECKLIST -->
     <section class="screen" id="screen-check">
       <div class="panel">
-        <div class="panelTitle">Pre-Trade Checklist (optional)</div>
+        <div class="panelTitle" data-i18n="checklist_title">Pre-Trade Checklist (optional)</div>
 
         <div class="form">
           <div class="row">
-            <label>Direction</label>
-            <div class="seg" id="cDirSeg">
-              <button class="segBtn active" type="button" data-dir="LONG">LONG</button>
-              <button class="segBtn" type="button" data-dir="SHORT">SHORT</button>
+            <label data-i18n="label_direction">Direction</label>
+            <div class="seg2" id="cDirSeg">
+              <button class="segBtn active" type="button" data-dir="LONG" data-i18n="long">LONG</button>
+              <button class="segBtn" type="button" data-dir="SHORT" data-i18n="short">SHORT</button>
             </div>
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Date</label><input id="cDate" type="date"/></div>
             <div class="row">
-              <label>Session</label>
+              <label data-i18n="label_date">Date</label>
+              <input id="cDate" type="date"/>
+            </div>
+            <div class="row">
+              <label data-i18n="label_session">Session</label>
               <select id="cSession">
-                <option value="">—</option>
+                <option value="" data-i18n="dash">—</option>
                 <option value="Asia">Asia</option>
                 <option value="London">London</option>
                 <option value="NY">NY</option>
@@ -107,36 +155,36 @@
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Entry</label><input id="cEntry" type="number" step="0.01"/></div>
-            <div class="row"><label>Stop Loss</label><input id="cSL" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_entry">Entry</label><input id="cEntry" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_sl">Stop Loss</label><input id="cSL" type="number" step="0.01"/></div>
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Lot</label><input id="cLot" type="number" step="0.01"/></div>
-            <div class="row"><label>TP (optional)</label><input id="cTP" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_lot">Lot</label><input id="cLot" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_tp_optional">TP (optional)</label><input id="cTP" type="number" step="0.01"/></div>
           </div>
 
-          <div class="kv"><span class="k">Risk $:</span> <span class="v" id="cRiskUsd">$0.00</span></div>
+          <div class="kv"><span class="k" data-i18n="k_risk_usd">Risk $:</span> <span class="v" id="cRiskUsd">$0.00</span></div>
 
           <div class="maeBox">
-            <div class="maeTitle">Checklist (NOT required)</div>
-            <div class="maeText">Leave unchecked if you want — still saves.</div>
+            <div class="maeTitle" data-i18n="checklist_box_title">Checklist (NOT required)</div>
+            <div class="maeText" data-i18n="checklist_box_hint">Leave unchecked if you want — still saves.</div>
 
             <div class="checkCols">
-              <label><input type="checkbox" class="cBox"/> Trend aligned</label>
-              <label><input type="checkbox" class="cBox"/> Key level</label>
-              <label><input type="checkbox" class="cBox"/> Confirmation</label>
-              <label><input type="checkbox" class="cBox"/> RR OK</label>
-              <label><input type="checkbox" class="cBox"/> News checked</label>
-              <label><input type="checkbox" class="cBox"/> Mindset OK</label>
+              <label><input type="checkbox" class="cBox"/> <span data-i18n="c_trend">Trend aligned</span></label>
+              <label><input type="checkbox" class="cBox"/> <span data-i18n="c_level">Key level</span></label>
+              <label><input type="checkbox" class="cBox"/> <span data-i18n="c_confirm">Confirmation</span></label>
+              <label><input type="checkbox" class="cBox"/> <span data-i18n="c_rr">RR OK</span></label>
+              <label><input type="checkbox" class="cBox"/> <span data-i18n="c_news">News checked</span></label>
+              <label><input type="checkbox" class="cBox"/> <span data-i18n="c_mindset">Mindset OK</span></label>
             </div>
 
             <div class="row">
-              <label>Notes</label>
+              <label data-i18n="label_notes">Notes</label>
               <textarea id="cNotes" rows="3"></textarea>
             </div>
 
-            <button class="btn" id="cAddTradeBtn" type="button">✅ Add OPEN trade</button>
+            <button class="btn" id="cAddTradeBtn" type="button" data-i18n="btn_add_open">✅ Add OPEN trade</button>
           </div>
         </div>
       </div>
@@ -145,23 +193,23 @@
     <!-- NEW -->
     <section class="screen" id="screen-new">
       <div class="panel">
-        <div class="panelTitle">New Trade</div>
+        <div class="panelTitle" data-i18n="new_title">New Trade</div>
 
         <div class="form">
           <div class="row">
-            <label>Direction</label>
-            <div class="seg" id="dirSeg">
-              <button class="segBtn active" type="button" data-dir="LONG">LONG</button>
-              <button class="segBtn" type="button" data-dir="SHORT">SHORT</button>
+            <label data-i18n="label_direction">Direction</label>
+            <div class="seg2" id="dirSeg">
+              <button class="segBtn active" type="button" data-dir="LONG" data-i18n="long">LONG</button>
+              <button class="segBtn" type="button" data-dir="SHORT" data-i18n="short">SHORT</button>
             </div>
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Date</label><input id="fDate" type="date"/></div>
+            <div class="row"><label data-i18n="label_date">Date</label><input id="fDate" type="date"/></div>
             <div class="row">
-              <label>Session</label>
+              <label data-i18n="label_session">Session</label>
               <select id="fSession">
-                <option value="">—</option>
+                <option value="" data-i18n="dash">—</option>
                 <option value="Asia">Asia</option>
                 <option value="London">London</option>
                 <option value="NY">NY</option>
@@ -170,21 +218,25 @@
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Entry</label><input id="fEntry" type="number" step="0.01"/></div>
-            <div class="row"><label>Stop Loss</label><input id="fSL" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_entry">Entry</label><input id="fEntry" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_sl">Stop Loss</label><input id="fSL" type="number" step="0.01"/></div>
           </div>
 
           <div class="grid2">
-            <div class="row"><label>TP (optional)</label><input id="fTP" type="number" step="0.01"/></div>
-            <div class="row"><label>Lot</label><input id="fLot" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_tp_optional">TP (optional)</label><input id="fTP" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_lot">Lot</label><input id="fLot" type="number" step="0.01"/></div>
           </div>
 
-          <div class="row"><label>Strategy / Setup</label><input id="fStrategy" placeholder="e.g. Sweep + MSS"/></div>
-          <div class="row"><label>Notes</label><textarea id="fNotes" rows="3"></textarea></div>
+          <div class="row">
+            <label data-i18n="label_setup">Strategy / Setup</label>
+            <input id="fStrategy" data-i18n-ph="ph_setup" placeholder="e.g. Sweep + MSS"/>
+          </div>
 
-          <div class="kv"><span class="k">Risk $:</span> <span class="v" id="riskUsd">$0.00</span></div>
+          <div class="row"><label data-i18n="label_notes">Notes</label><textarea id="fNotes" rows="3"></textarea></div>
 
-          <button class="btn" id="saveTradeBtn" type="button">✅ Save OPEN</button>
+          <div class="kv"><span class="k" data-i18n="k_risk_usd">Risk $:</span> <span class="v" id="riskUsd">$0.00</span></div>
+
+          <button class="btn" id="saveTradeBtn" type="button" data-i18n="btn_save_open">✅ Save OPEN</button>
         </div>
       </div>
     </section>
@@ -192,75 +244,67 @@
     <!-- CLOSE -->
     <section class="screen" id="screen-close">
       <div class="panel">
-        <div class="panelTitle">Close Trade</div>
+        <div class="panelTitle" data-i18n="close_title">Close Trade</div>
 
-        <div class="row">
-          <label>Select OPEN trade</label>
-          <select id="closeSelect"></select>
-        </div>
+        <button class="btn ghost" id="closePickBtn" type="button" data-i18n="btn_select_open">Select OPEN trade</button>
         <div class="kv" id="closeMeta"></div>
 
         <div class="grid2">
-          <div class="row"><label>Exit price</label><input id="closeExit" type="number" step="0.01"/></div>
-          <div class="row"><label>PnL ($) (if no exit)</label><input id="closePnl" type="number" step="0.01"/></div>
+          <div class="row"><label data-i18n="label_exit">Exit price</label><input id="closeExit" type="number" step="0.01"/></div>
+          <div class="row"><label data-i18n="label_pnl_if_no_exit">PnL ($) (if no exit)</label><input id="closePnl" type="number" step="0.01"/></div>
         </div>
 
         <div class="maeBox">
-          <div class="maeTitle">MAE / MFE</div>
-          <div class="maeText">
-            <b>MAE</b> = Maximum Adverse Excursion (worst against you) •
-            <b>MFE</b> = Maximum Favorable Excursion (best for you)
+          <div class="maeTitle" data-i18n="mae_title">MAE / MFE</div>
+          <div class="maeText" data-i18n="mae_explain">
+            MAE = Maximum Adverse Excursion (worst against you) • MFE = Maximum Favorable Excursion (best for you)
           </div>
-          <div class="maeArt">
-            LONG: MAE=<span class="red">lowest</span> • MFE=<span class="green">highest</span><br/>
-            SHORT: MAE=<span class="red">highest</span> • MFE=<span class="green">lowest</span>
+          <div class="maeArt" data-i18n="mae_art">
+            LONG: MAE=lowest • MFE=highest<br/>SHORT: MAE=highest • MFE=lowest
           </div>
 
           <div class="grid2">
             <div class="row">
-              <label>MAE price (worst)</label>
+              <label data-i18n="label_mae_price">MAE price (worst)</label>
               <input id="closeMAE" type="number" step="0.01"/>
               <div class="kv"><span class="k">MAE $:</span> <span class="v" id="closeMAEUsd">$0.00</span></div>
             </div>
             <div class="row">
-              <label>MFE price (best)</label>
+              <label data-i18n="label_mfe_price">MFE price (best)</label>
               <input id="closeMFE" type="number" step="0.01"/>
               <div class="kv"><span class="k">MFE $:</span> <span class="v" id="closeMFEUsd">$0.00</span></div>
             </div>
           </div>
 
-          <div class="kv"><span class="k">Risk $:</span> <span class="v" id="closeRiskUsd">$0.00</span></div>
-          <div class="kv"><span class="k">R result:</span> <span class="v" id="closeR">0.00R</span></div>
+          <div class="kv"><span class="k" data-i18n="k_risk_usd">Risk $:</span> <span class="v" id="closeRiskUsd">$0.00</span></div>
+          <div class="kv"><span class="k" data-i18n="k_r_result">R result:</span> <span class="v" id="closeR">0.00R</span></div>
         </div>
 
-        <button class="btn" id="closeTradeBtn" type="button">🏁 Close & Save</button>
+        <button class="btn" id="closeTradeBtn" type="button" data-i18n="btn_close_save">🏁 Close & Save</button>
       </div>
     </section>
 
     <!-- REVIEW -->
     <section class="screen" id="screen-review">
       <div class="panel">
-        <div class="panelTitle">Review Trade</div>
+        <div class="panelTitle" data-i18n="review_title">Review Trade</div>
 
-        <div class="row">
-          <label>Select trade</label>
-          <select id="reviewSelect"></select>
-        </div>
+        <button class="btn ghost" id="reviewPickBtn" type="button" data-i18n="btn_select_trade">Select trade</button>
         <div class="kv" id="reviewMeta"></div>
 
         <div class="form">
           <div class="row">
-            <label>Followed plan?</label>
+            <label data-i18n="label_followed_plan">Followed plan?</label>
             <select id="rPlan">
-              <option value="YES">YES</option>
-              <option value="NO">NO</option>
+              <option value="YES" data-i18n="yes">YES</option>
+              <option value="NO" data-i18n="no">NO</option>
             </select>
           </div>
 
           <div class="row">
-            <label>Discipline mistake type</label>
+            <label data-i18n="label_mistake_type">Discipline mistake type</label>
             <select id="rMistakeType">
-              <option value="">None</option>
+              <option value="" data-i18n="none">None</option>
               <option value="Moved SL">Moved SL</option>
               <option value="Early Exit">Early Exit</option>
               <option value="Late Entry">Late Entry</option>
@@ -272,10 +316,14 @@
             </select>
           </div>
 
-          <div class="row"><label>Mistake note (optional)</label><input id="rMistake"/></div>
-          <div class="row"><label>Review notes</label><textarea id="rReviewNotes" rows="4"></textarea></div>
+          <div class="row">
+            <label data-i18n="label_mistake_note">Mistake note (optional)</label>
+            <input id="rMistake" data-i18n-ph="ph_mistake" placeholder="Short note..."/>
+          </div>
 
-          <button class="btn" id="saveReviewBtn" type="button">💾 Save review</button>
+          <div class="row"><label data-i18n="label_review_notes">Review notes</label><textarea id="rReviewNotes" rows="4"></textarea></div>
+
+          <button class="btn" id="saveReviewBtn" type="button" data-i18n="btn_save_review">💾 Save review</button>
         </div>
       </div>
     </section>
@@ -283,45 +331,42 @@
     <!-- ALL -->
     <section class="screen" id="screen-all">
       <div class="panel">
-        <div class="panelTitle">All Trades (filtered)</div>
-        <div id="allTradesList" class="list"></div>
+        <div class="panelTitle" data-i18n="all_title">All Trades (filtered)</div>
+        <div id="allTradesList"></div>
       </div>
     </section>
 
     <!-- EDIT -->
     <section class="screen" id="screen-edit">
       <div class="panel">
-        <div class="panelTitle">Edit Trade</div>
+        <div class="panelTitle" data-i18n="edit_title">Edit Trade</div>
 
-        <div class="row">
-          <label>Select trade</label>
-          <select id="editSelect"></select>
-        </div>
+        <button class="btn ghost" id="editPickBtn" type="button" data-i18n="btn_select_trade">Select trade</button>
         <div class="kv" id="editMeta"></div>
 
         <div class="form">
           <div class="row">
-            <label>Status</label>
+            <label data-i18n="label_status">Status</label>
             <select id="eStatus">
-              <option value="OPEN">OPEN</option>
-              <option value="CLOSED">CLOSED</option>
+              <option value="OPEN" data-i18n="open">OPEN</option>
+              <option value="CLOSED" data-i18n="closed">CLOSED</option>
             </select>
           </div>
 
           <div class="row">
-            <label>Direction</label>
-            <div class="seg" id="eDirSeg">
-              <button class="segBtn active" type="button" data-dir="LONG">LONG</button>
-              <button class="segBtn" type="button" data-dir="SHORT">SHORT</button>
+            <label data-i18n="label_direction">Direction</label>
+            <div class="seg2" id="eDirSeg">
+              <button class="segBtn active" type="button" data-dir="LONG" data-i18n="long">LONG</button>
+              <button class="segBtn" type="button" data-dir="SHORT" data-i18n="short">SHORT</button>
             </div>
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Date</label><input id="eDate" type="date"/></div>
+            <div class="row"><label data-i18n="label_date">Date</label><input id="eDate" type="date"/></div>
             <div class="row">
-              <label>Session</label>
+              <label data-i18n="label_session">Session</label>
               <select id="eSession">
-                <option value="">—</option>
+                <option value="" data-i18n="dash">—</option>
                 <option value="Asia">Asia</option>
                 <option value="London">London</option>
                 <option value="NY">NY</option>
@@ -330,49 +375,45 @@
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Entry</label><input id="eEntry" type="number" step="0.01"/></div>
-            <div class="row"><label>Stop Loss</label><input id="eSL" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_entry">Entry</label><input id="eEntry" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_sl">Stop Loss</label><input id="eSL" type="number" step="0.01"/></div>
           </div>
 
           <div class="grid2">
-            <div class="row"><label>TP</label><input id="eTP" type="number" step="0.01"/></div>
-            <div class="row"><label>Lot</label><input id="eLot" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_tp">TP</label><input id="eTP" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_lot">Lot</label><input id="eLot" type="number" step="0.01"/></div>
           </div>
 
           <div class="grid2">
-            <div class="row"><label>Exit</label><input id="eExit" type="number" step="0.01"/></div>
-            <div class="row"><label>PnL (if no exit)</label><input id="ePnl" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_exit">Exit</label><input id="eExit" type="number" step="0.01"/></div>
+            <div class="row"><label data-i18n="label_pnl_if_no_exit">PnL ($) (if no exit)</label><input id="ePnl" type="number" step="0.01"/></div>
           </div>
 
           <div class="maeBox">
-            <div class="maeTitle">MAE / MFE</div>
-            <div class="maeText">MAE = worst against you • MFE = best for you</div>
-            <div class="maeArt">
-              LONG: MAE <span class="red">lowest</span> • MFE <span class="green">highest</span><br/>
-              SHORT: MAE <span class="red">highest</span> • MFE <span class="green">lowest</span>
-            </div>
+            <div class="maeTitle" data-i18n="mae_title">MAE / MFE</div>
+            <div class="maeText" data-i18n="mae_short">MAE = worst against you • MFE = best for you</div>
 
             <div class="grid2">
               <div class="row">
-                <label>MAE price</label>
+                <label data-i18n="label_mae_price">MAE price (worst)</label>
                 <input id="eMAE" type="number" step="0.01"/>
                 <div class="kv"><span class="k">MAE $:</span> <span class="v" id="eMAEUsd">$0.00</span></div>
               </div>
               <div class="row">
-                <label>MFE price</label>
+                <label data-i18n="label_mfe_price">MFE price (best)</label>
                 <input id="eMFE" type="number" step="0.01"/>
                 <div class="kv"><span class="k">MFE $:</span> <span class="v" id="eMFEUsd">$0.00</span></div>
               </div>
             </div>
 
-            <div class="kv"><span class="k">Risk $:</span> <span class="v" id="eRisk">$0.00</span></div>
+            <div class="kv"><span class="k" data-i18n="k_risk_usd">Risk $:</span> <span class="v" id="eRisk">$0.00</span></div>
             <div class="kv"><span class="k">R:</span> <span class="v" id="eR">0.00R</span></div>
           </div>
 
-          <div class="row"><label>Strategy / Setup</label><input id="eStrategy"/></div>
-          <div class="row"><label>Notes</label><textarea id="eNotes" rows="4"></textarea></div>
+          <div class="row"><label data-i18n="label_setup">Strategy / Setup</label><input id="eStrategy"/></div>
+          <div class="row"><label data-i18n="label_notes">Notes</label><textarea id="eNotes" rows="4"></textarea></div>
 
-          <button class="btn" id="saveEditBtn" type="button">💾 Save changes</button>
+          <button class="btn" id="saveEditBtn" type="button" data-i18n="btn_save_changes">💾 Save changes</button>
         </div>
       </div>
     </section>
@@ -380,46 +421,44 @@
     <!-- SETTINGS -->
     <section class="screen" id="screen-settings">
       <div class="panel">
-        <div class="panelTitle">Sharing</div>
+        <div class="panelTitle" data-i18n="settings_sharing">Sharing</div>
         <div class="row2">
-          <button class="btn" id="shareSnapshotBtn" type="button">Share Snapshot</button>
-          <button class="btn ghost" id="exportJsonBtn" type="button">Export JSON</button>
+          <button class="btn" id="shareSnapshotBtn" type="button" data-i18n="btn_share_snapshot">Share Snapshot</button>
+          <button class="btn ghost" id="exportJsonBtn" type="button" data-i18n="btn_export_json">Export JSON</button>
         </div>
 
         <div class="row" style="margin-top:10px;">
-          <label>Import JSON</label>
-          <textarea id="importJsonText" rows="6" placeholder='Paste backup JSON here...'></textarea>
+          <label data-i18n="label_import_json">Import JSON</label>
+          <textarea id="importJsonText" rows="6" data-i18n-ph="ph_import" placeholder="Paste backup JSON here..."></textarea>
           <div class="row2" style="margin-top:10px;">
-            <button class="btn" id="importReplaceBtn" type="button">Import (Replace)</button>
-            <button class="btn ghost" id="importMergeBtn" type="button">Import (Merge)</button>
+            <button class="btn" id="importReplaceBtn" type="button" data-i18n="btn_import_replace">Import (Replace)</button>
+            <button class="btn ghost" id="importMergeBtn" type="button" data-i18n="btn_import_merge">Import (Merge)</button>
           </div>
           <div class="kv" id="importMsg"></div>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panelTitle">Language</div>
-        <div class="seg" id="langSeg">
+        <div class="panelTitle" data-i18n="settings_language">Language</div>
+        <div class="seg2" id="langSeg">
           <button class="segBtn active" type="button" data-lang="EN">EN</button>
           <button class="segBtn" type="button" data-lang="HE">HE</button>
         </div>
-        <div class="maeText" style="margin-top:10px;">
-          Default is EN. Toggle is saved (full translation can be added later).
-        </div>
+        <div class="maeText" data-i18n="lang_hint">Default is EN. Hebrew uses RTL.</div>
       </div>
 
       <div class="panel">
-        <div class="panelTitle">Privacy</div>
+        <div class="panelTitle" data-i18n="settings_privacy">Privacy</div>
         <label class="switchLine">
           <input type="checkbox" id="hidePnlToggle"/>
-          <span>Hide PnL amounts (default OFF)</span>
+          <span data-i18n="hide_pnl">Hide PnL amounts (default OFF)</span>
         </label>
       </div>
 
       <div class="panel danger">
-        <div class="panelTitle">Danger zone</div>
-        <button class="btn danger" id="resetAllBtn" type="button">Reset all data</button>
-        <div class="maeText" style="margin-top:8px;">Deletes everything saved locally on this device.</div>
+        <div class="panelTitle" data-i18n="danger_zone">Danger zone</div>
+        <button class="btn danger" id="resetAllBtn" type="button" data-i18n="btn_reset_all">Reset all data</button>
+        <div class="maeText" data-i18n="reset_hint">Deletes everything saved locally on this device.</div>
       </div>
     </section>
 
@@ -437,33 +476,48 @@
         <div class="snapGrid" id="snapGrid"></div>
 
         <div class="snapSection">
-          <div class="snapSectionTitle">Sessions</div>
+          <div class="snapSectionTitle" data-i18n="sessions_title">Sessions</div>
           <div class="snapSess" id="snapSessions"></div>
         </div>
 
         <div class="snapFooter">
-          Built by <b>FaShuSh</b> for <b>AdigaFX</b> • v35
+          <span data-i18n="credit">Built by FaShuSh for AdigaFX</span> • v36
         </div>
       </div>
 
       <div class="row2" style="margin-top:10px;">
-        <button class="btn ghost" id="snapBackBtn" type="button">Back</button>
-        <button class="btn" id="snapTipBtn" type="button">How to share</button>
+        <button class="btn ghost" id="snapBackBtn" type="button" data-i18n="btn_back">Back</button>
+        <button class="btn" id="snapTipBtn" type="button" data-i18n="btn_how_share">How to share</button>
       </div>
     </section>
 
+    <!-- Quick actions -->
     <div class="quickActions">
-      <button class="btn" id="qaNew" type="button">+</button>
-      <button class="btn ghost" id="qaChecklist" type="button">✓</button>
-      <button class="btn ghost" id="qaClose" type="button">⏹</button>
-      <button class="btn ghost" id="qaAll" type="button">≡</button>
+      <button class="btn" id="qaNew" type="button" aria-label="New">+</button>
+      <button class="btn ghost" id="qaChecklist" type="button" aria-label="Checklist">✓</button>
+      <button class="btn ghost" id="qaClose" type="button" aria-label="Close">⏹</button>
+      <button class="btn ghost" id="qaAll" type="button" aria-label="All">≡</button>
     </div>
 
     <footer class="credit">
-      Built by <b>FaShuSh</b> for <b>AdigaFX</b>
+      <span data-i18n="credit">Built by FaShuSh for AdigaFX</span>
     </footer>
   </div>
 
-  <script src="app.js?v=35"></script>
+  <!-- Modal selector (created/filled by JS, but container must exist) -->
+  <div class="modal" id="tradeModal" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div class="sheetTop">
+        <div class="sheetTitle" id="sheetTitle">Select trade</div>
+        <button class="sheetClose" id="sheetClose" type="button">Close</button>
+      </div>
+      <div class="sheetSearch">
+        <input id="sheetSearch" placeholder="Search..."/>
+      </div>
+      <div class="sheetList" id="sheetList"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=36"></script>
 </body>
 </html>
