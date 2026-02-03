@@ -1,5 +1,10 @@
 const tg = window.Telegram?.WebApp;
 tg?.ready();
+tg?.expand();
+
+
+const tg = window.Telegram?.WebApp;
+tg?.ready();
 
 const STORAGE_KEY = "tj_trades_v1";
 
