@@ -89,7 +89,8 @@ document.addEventListener("DOMContentLoaded", () => {
       needFields: "Please fill Entry, Stop Loss and Lot. Provide Exit or PnL.",
       importOk: "Import completed.",
       importBad: "Invalid JSON file.",
-      confirmReset: "Reset ALL local data? This cannot be undone."
+      confirmReset: "Reset ALL local data? This cannot be undone.",
+      noTradesYet: "No trades yet."
     },
     HE: {
       tabDash: "דשבורד",
@@ -173,7 +174,8 @@ document.addEventListener("DOMContentLoaded", () => {
       needFields: "מלא Entry/SL/Lot. הכנס Exit או PnL.",
       importOk: "הייבוא הושלם.",
       importBad: "קובץ JSON לא תקין.",
-      confirmReset: "לאפס את כל הנתונים המקומיים? אי אפשר לבטל."
+      confirmReset: "לאפס את כל הנתונים המקומיים? אי אפשר לבטל.",
+      noTradesYet: "אין עסקאות עדיין."
     }
   };
 
@@ -197,17 +199,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function saveState(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  function saveState(s) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
   }
 
   let state = loadState();
 
   // ---------- Trade math ----------
-  function toNum(v) {
+  const toNum = (v) => {
     const n = parseFloat(v);
     return Number.isFinite(n) ? n : null;
-  }
+  };
 
   function fmtMoney(n) {
     const sign = n >= 0 ? "" : "-";
@@ -215,12 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function riskUsdApprox(entry, sl, lot) {
-    // XAUUSD: 1 lot = 100oz. Risk$ ≈ |Entry-SL| × lot × 100
     return Math.abs(entry - sl) * lot * 100;
   }
 
   function pnlFromExit(entry, exit, lot, dir) {
-    // PnL$ ≈ (Exit-Entry)*lot*100 for LONG, reversed for SHORT
     const delta = (exit - entry) * lot * 100;
     return dir === "SHORT" ? -delta : delta;
   }
@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (route === "settings") $("appTitle").textContent = t.appTitleSettings;
 
     if (route === "stats") renderStats();
-    if (route === "review") renderReview();
+    if (route === "review") renderReview(true);
   }
 
   // ---------- UI text update ----------
@@ -279,7 +279,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("goNewBtn").textContent = t.goNew;
     $("goStatsBtn").textContent = t.goStats;
 
-    $("lblNewTrade").textContent = I18N[state.lang].appTitleNew;
     $("lblDirection").textContent = t.lblDirection;
     $("lblDate").textContent = t.lblDate;
     $("lblSession").textContent = t.lblSession;
@@ -299,8 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("saveTradeBtn").textContent = t.saveTrade;
     $("resetFormBtn").textContent = t.reset;
 
-    $("lblStats").textContent = I18N[state.lang].appTitleStats;
-    // Stats filter buttons (use first two seg btns in statsFilterSeg)
     const statsBtns = $$("#statsFilterSeg .segBtn");
     if (statsBtns[0]) statsBtns[0].textContent = t.statsAll;
     if (statsBtns[1]) statsBtns[1].textContent = t.statsMonth;
@@ -316,26 +313,23 @@ document.addEventListener("DOMContentLoaded", () => {
     $("lblRDist").textContent = t.lblRDist;
     $("lblMistakes").textContent = t.lblMistakes;
 
-    $("lblReview").textContent = I18N[state.lang].appTitleReview;
     $("pickLastBtn").textContent = t.pickLast;
     $("lblPickTrade").textContent = t.lblPickTrade;
     $("lblPlan").textContent = t.lblPlan;
-    // Plan seg buttons (first two)
+
     const planBtns = $$("#planSeg .segBtn");
     if (planBtns[0]) planBtns[0].textContent = t.yes;
     if (planBtns[1]) planBtns[1].textContent = t.no;
+
     $("lblMistakeType").textContent = t.lblMistakeType;
     $("lblReviewNotes").textContent = t.lblReviewNotes;
     $("saveReviewBtn").textContent = t.saveReview;
     $("clearReviewBtn").textContent = t.clear;
 
-    $("lblSettings").textContent = t.tabSettings;
     $("lblDataTools").textContent = t.lblDataTools;
     $("exportBtn").textContent = t.export;
-    // file button text is inside label, keep as-is visually
     $("resetAllBtn").textContent = t.resetAll;
     $("hintReset").textContent = t.hintReset;
-    $("lblAbout").textContent = "About";
     $("aboutText").textContent = t.about;
 
     document.documentElement.dir = (state.lang === "HE") ? "rtl" : "ltr";
@@ -363,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     state.trades.slice().reverse().forEach(tr => {
       const cls = tr.pnl > 0 ? "green" : tr.pnl < 0 ? "red" : "";
-      const reviewBadge = (tr.review && (tr.review.plan || tr.review.mistake || tr.review.notes))
+      const reviewed = tr.review && (tr.review.plan !== "YES" || tr.review.mistake || tr.review.notes)
         ? `<span class="badge">Reviewed</span>`
         : `<span class="badge">—</span>`;
 
@@ -371,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
       el.className = "item";
       el.innerHTML = `
         <div class="itemTop">
-          <div>XAUUSD • ${tr.dir} ${reviewBadge}</div>
+          <div>XAUUSD • ${tr.dir} ${reviewed}</div>
           <div class="badge ${cls}">${fmtMoney(tr.pnl)} / ${tr.r.toFixed(2)}R</div>
         </div>
         <div class="label">
@@ -383,9 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- Canvas drawing ----------
-  function clearCanvas(ctx, w, h) {
-    ctx.clearRect(0, 0, w, h);
-  }
+  function clearCanvas(ctx, w, h) { ctx.clearRect(0, 0, w, h); }
 
   function drawAxes(ctx, w, h) {
     ctx.strokeStyle = "rgba(255,255,255,.10)";
@@ -420,18 +412,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const plotW = w - padLeft - padRight;
     const plotH = h - padTop - padBottom;
 
-    function sx(x) {
-      if (points.length === 1) return padLeft + plotW/2;
-      return padLeft + (x/(points.length-1))*plotW;
-    }
-
-    function sy(y) {
-      if (maxY === minY) return padTop + plotH/2;
-      return padTop + (1 - ((y - minY)/(maxY - minY))) * plotH;
-    }
+    const sx = (x) => points.length === 1 ? padLeft + plotW/2 : padLeft + (x/(points.length-1))*plotW;
+    const sy = (y) => (maxY === minY) ? padTop + plotH/2 : padTop + (1 - ((y - minY)/(maxY - minY))) * plotH;
 
     // baseline 0
     ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padLeft, sy(0));
     ctx.lineTo(w - padRight, sy(0));
@@ -472,7 +458,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const rs = tradesFiltered.map(t=>t.r).filter(r=>Number.isFinite(r));
     if (!rs.length) return;
 
-    // bins: [-3,-2),[-2,-1),[-1,0),[0,1),[1,2),[2,3+]
     const bins = [0,0,0,0,0,0];
     rs.forEach(r=>{
       if (r < -2) bins[0]++; else
@@ -497,7 +482,6 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.fillRect(x, y, barW - 16, bh);
     });
 
-    // labels
     const labels = ["<-2R","-2..-1","-1..0","0..1","1..2",">=2R"];
     ctx.fillStyle = "rgba(255,255,255,.55)";
     ctx.font = "12px -apple-system, system-ui, Arial";
@@ -507,9 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- New Trade ----------
-  function setDefaultDate() {
-    $("fDate").value = new Date().toISOString().slice(0,10);
-  }
+  function setDefaultDate() { $("fDate").value = new Date().toISOString().slice(0,10); }
 
   function setDir(dir) {
     $$("#dirSeg .segBtn").forEach(b => b.classList.toggle("active", b.dataset.dir === dir));
@@ -600,11 +582,7 @@ document.addEventListener("DOMContentLoaded", () => {
       r: +r.toFixed(2),
       strategy: ($("fStrategy").value || "").trim(),
       notes: ($("fNotes").value || "").trim(),
-      review: {
-        plan: "YES",
-        mistake: "",
-        notes: ""
-      }
+      review: { plan: "YES", mistake: "", notes: "" }
     };
 
     state.trades.push(trade);
@@ -618,9 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ---------- Stats ----------
   function getFilteredTrades() {
-    if (state.statsFilter === "MONTH") {
-      return state.trades.filter(tr => isThisMonth(tr.date));
-    }
+    if (state.statsFilter === "MONTH") return state.trades.filter(tr => isThisMonth(tr.date));
     return state.trades.slice();
   }
 
@@ -638,7 +614,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     drawRDistribution(trades);
 
-    // Mistakes breakdown
     const counts = {};
     trades.forEach(tr => {
       const m = tr.review?.mistake || "";
@@ -661,10 +636,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ---------- Review ----------
-  function renderReviewSelect() {
+  // ---------- Review (FIXED) ----------
+  function clearReviewFormUI() {
+    // Make it "blank default" after save
+    setPlan("YES");
+    $("mistakeType").value = "";
+    $("reviewNotes").value = "";
+  }
+
+  function renderReviewSelect(keepSelectedId = null) {
     const sel = $("reviewSelect");
+    const current = keepSelectedId || sel.value || "";
+
     sel.innerHTML = "";
+
+    if (!state.trades.length) {
+      sel.innerHTML = `<option value="">No trades</option>`;
+      return;
+    }
 
     state.trades.slice().reverse().forEach(tr => {
       const opt = document.createElement("option");
@@ -672,6 +661,9 @@ document.addEventListener("DOMContentLoaded", () => {
       opt.textContent = `${tr.date} • ${tr.dir} • ${fmtMoney(tr.pnl)} • ${tr.r.toFixed(2)}R`;
       sel.appendChild(opt);
     });
+
+    const exists = state.trades.some(t => t.id === current);
+    sel.value = exists ? current : state.trades[state.trades.length - 1].id;
   }
 
   function getSelectedTrade() {
@@ -688,14 +680,24 @@ document.addEventListener("DOMContentLoaded", () => {
     return b ? b.dataset.plan : "YES";
   }
 
-  function renderReview() {
+  function renderReview(firstOpen = false) {
+    const t = I18N[state.lang];
+    const sel = $("reviewSelect");
+
     if (!state.trades.length) {
-      $("reviewSelect").innerHTML = "";
-      $("reviewMeta").textContent = "No trades yet.";
+      sel.innerHTML = "";
+      $("reviewMeta").textContent = t.noTradesYet;
+      clearReviewFormUI();
       return;
     }
 
-    renderReviewSelect();
+    // Keep the current selection (don't override user choice)
+    renderReviewSelect(sel.value);
+
+    // If it's first open and nothing selected yet, pick latest
+    if (firstOpen && !sel.value) {
+      sel.value = state.trades[state.trades.length - 1].id;
+    }
 
     const tr = getSelectedTrade();
     if (!tr) return;
@@ -703,9 +705,11 @@ document.addEventListener("DOMContentLoaded", () => {
     $("reviewMeta").textContent =
       `XAUUSD • ${tr.dir} • ${tr.date}${tr.session ? " • " + tr.session : ""} • Entry ${tr.entry.toFixed(2)} • SL ${tr.sl.toFixed(2)} • Lot ${tr.lot.toFixed(2)} • ${fmtMoney(tr.pnl)} • ${tr.r.toFixed(2)}R`;
 
-    setPlan(tr.review?.plan || "YES");
-    $("mistakeType").value = tr.review?.mistake || "";
-    $("reviewNotes").value = tr.review?.notes || "";
+    // IMPORTANT: show existing review data
+    const rev = tr.review || { plan: "YES", mistake: "", notes: "" };
+    setPlan(rev.plan || "YES");
+    $("mistakeType").value = rev.mistake || "";
+    $("reviewNotes").value = rev.notes || "";
   }
 
   function saveReview() {
@@ -720,15 +724,22 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     saveState(state);
+
+    // After save: clear UI (blank default) but keep selected trade
     alert(t.saved);
+    clearReviewFormUI();
     renderAll();
   }
 
   function clearReview() {
     const tr = getSelectedTrade();
     if (!tr) return;
+
     tr.review = { plan: "YES", mistake: "", notes: "" };
     saveState(state);
+
+    // After clear: clear UI
+    clearReviewFormUI();
     renderAll();
   }
 
@@ -744,7 +755,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(a);
     a.click();
     a.remove();
-
     URL.revokeObjectURL(url);
   }
 
@@ -754,7 +764,6 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
-        // minimal validation
         if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.trades)) throw new Error("bad");
         state = { ...defaultState, ...parsed };
         saveState(state);
@@ -774,6 +783,8 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem(STORAGE_KEY);
     state = loadState();
     applyLang();
+    resetForm();
+    clearReviewFormUI();
     renderAll();
   }
 
@@ -784,18 +795,18 @@ document.addEventListener("DOMContentLoaded", () => {
     $("winRate").textContent = `${dash.winRate.toFixed(0)}%`;
     $("avgR").textContent = `${dash.avgR.toFixed(2)}R`;
 
-    $("eqModeBadge").textContent = (state.statsFilter === "MONTH") ? I18N[state.lang].statsMonth : I18N[state.lang].statsAll;
+    $("eqModeBadge").textContent =
+      (state.statsFilter === "MONTH") ? I18N[state.lang].statsMonth : I18N[state.lang].statsAll;
 
     renderTradesList();
     drawEquityCurve();
     renderStats();
-    renderReview();
+    // NOTE: do NOT force rerender review here to avoid overriding selection
   }
 
   // ---------- Demo trade ----------
   function addDemoTrade() {
-    const now = new Date();
-    const date = now.toISOString().slice(0,10);
+    const date = new Date().toISOString().slice(0,10);
     const dir = Math.random() > 0.5 ? "LONG" : "SHORT";
     const entry = 2356.2;
     const sl = 2350.8;
@@ -829,16 +840,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- Wire events ----------
-  // Tabs
-  $$(".tab").forEach(btn => {
-    btn.addEventListener("click", () => setActiveTab(btn.dataset.route));
-  });
+  $$(".tab").forEach(btn => btn.addEventListener("click", () => setActiveTab(btn.dataset.route)));
 
-  // Quick nav
   $("goNewBtn").addEventListener("click", () => setActiveTab("new"));
   $("goStatsBtn").addEventListener("click", () => setActiveTab("stats"));
 
-  // Language toggle
   $("langBtn").addEventListener("click", () => {
     state.lang = (state.lang === "EN") ? "HE" : "EN";
     saveState(state);
@@ -863,10 +869,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Live risk update on inputs
-  ["fEntry","fSL","fLot","fExit","fPnl"].forEach(id => {
-    $(id).addEventListener("input", updateLiveRisk);
-  });
+  ["fEntry","fSL","fLot","fExit","fPnl"].forEach(id => $(id).addEventListener("input", updateLiveRisk));
 
   $("resetFormBtn").addEventListener("click", resetForm);
   $("saveTradeBtn").addEventListener("click", addTradeFromForm);
@@ -884,12 +887,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Review select
-  $("reviewSelect").addEventListener("change", renderReview);
+  // Review
+  $("reviewSelect").addEventListener("change", () => renderReview(false));
   $("pickLastBtn").addEventListener("click", () => {
     if (!state.trades.length) return;
     $("reviewSelect").value = state.trades[state.trades.length - 1].id;
-    renderReview();
+    renderReview(false);
   });
 
   $("saveReviewBtn").addEventListener("click", saveReview);
@@ -905,11 +908,8 @@ document.addEventListener("DOMContentLoaded", () => {
   $("resetAllBtn").addEventListener("click", resetAll);
 
   // ---------- Init ----------
-  // default date
   setDefaultDate();
   resetForm();
-
-  // Apply language + render
   applyLang();
   renderAll();
   setActiveTab("dash");
