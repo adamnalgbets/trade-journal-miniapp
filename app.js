@@ -69,6 +69,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       pickLast: "Pick last",
       lblPickTrade: "Select trade",
+      pickerTap: "Tap to choose…",
+      modalTitle: "Select trade",
+      modalSearch: "Search: date / LONG / SHORT / pnl…",
+
       lblPlan: "According to plan?",
       yes: "YES",
       no: "NO",
@@ -90,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
       importOk: "Import completed.",
       importBad: "Invalid JSON file.",
       confirmReset: "Reset ALL local data? This cannot be undone.",
-      noTradesYet: "No trades yet."
+      noTradeSelected: "No trade selected."
     },
     HE: {
       tabDash: "דשבורד",
@@ -154,6 +158,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       pickLast: "בחר אחרון",
       lblPickTrade: "בחר עסקה",
+      pickerTap: "לחץ לבחירה…",
+      modalTitle: "בחר עסקה",
+      modalSearch: "חיפוש: תאריך / לונג / שורט / רווח…",
+
       lblPlan: "לפי התוכנית?",
       yes: "כן",
       no: "לא",
@@ -175,20 +183,15 @@ document.addEventListener("DOMContentLoaded", () => {
       importOk: "הייבוא הושלם.",
       importBad: "קובץ JSON לא תקין.",
       confirmReset: "לאפס את כל הנתונים המקומיים? אי אפשר לבטל.",
-      noTradesYet: "אין עסקאות עדיין."
+      noTradeSelected: "לא נבחרה עסקה."
     }
   };
 
-  // ---------- DOM helpers ----------
+  // ---------- Helpers ----------
   const $ = (id) => document.getElementById(id);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  // ---------- State ----------
-  const defaultState = {
-    lang: "EN",
-    trades: [],
-    statsFilter: "ALL"
-  };
+  const defaultState = { lang: "EN", trades: [], statsFilter: "ALL", reviewSelectedId: "" };
 
   function loadState() {
     try {
@@ -198,14 +201,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return { ...defaultState };
     }
   }
-
-  function saveState(s) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  }
+  function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
   let state = loadState();
 
-  // ---------- Trade math ----------
   const toNum = (v) => {
     const n = parseFloat(v);
     return Number.isFinite(n) ? n : null;
@@ -216,19 +215,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${sign}$${Math.abs(n).toFixed(2)}`;
   }
 
-  function riskUsdApprox(entry, sl, lot) {
-    return Math.abs(entry - sl) * lot * 100;
-  }
-
+  function riskUsdApprox(entry, sl, lot) { return Math.abs(entry - sl) * lot * 100; }
   function pnlFromExit(entry, exit, lot, dir) {
     const delta = (exit - entry) * lot * 100;
     return dir === "SHORT" ? -delta : delta;
   }
-
-  function rMultiple(pnl, riskUsd) {
-    if (!riskUsd || riskUsd <= 0) return 0;
-    return pnl / riskUsd;
-  }
+  function rMultiple(pnl, riskUsd) { return (!riskUsd || riskUsd <= 0) ? 0 : pnl / riskUsd; }
 
   function isThisMonth(dateStr) {
     const d = new Date(dateStr);
@@ -236,23 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   }
 
-  // ---------- Routing ----------
-  function setActiveTab(route) {
-    $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.route === route));
-    $$(".screen").forEach(s => s.classList.toggle("active", s.id === `screen-${route}`));
-
-    const t = I18N[state.lang];
-    if (route === "dash") $("appTitle").textContent = t.appTitleDash;
-    if (route === "new") $("appTitle").textContent = t.appTitleNew;
-    if (route === "stats") $("appTitle").textContent = t.appTitleStats;
-    if (route === "review") $("appTitle").textContent = t.appTitleReview;
-    if (route === "settings") $("appTitle").textContent = t.appTitleSettings;
-
-    if (route === "stats") renderStats();
-    if (route === "review") renderReview(true);
-  }
-
-  // ---------- UI text update ----------
+  // ---------- Language ----------
   function applyLang() {
     const t = I18N[state.lang];
 
@@ -315,8 +291,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     $("pickLastBtn").textContent = t.pickLast;
     $("lblPickTrade").textContent = t.lblPickTrade;
-    $("lblPlan").textContent = t.lblPlan;
+    $("reviewPickBtn").textContent = t.pickerTap;
 
+    $("tradeModalTitle").textContent = t.modalTitle;
+    $("tradeSearch").placeholder = t.modalSearch;
+
+    $("lblPlan").textContent = t.lblPlan;
     const planBtns = $$("#planSeg .segBtn");
     if (planBtns[0]) planBtns[0].textContent = t.yes;
     if (planBtns[1]) planBtns[1].textContent = t.no;
@@ -335,7 +315,24 @@ document.addEventListener("DOMContentLoaded", () => {
     document.documentElement.dir = (state.lang === "HE") ? "rtl" : "ltr";
   }
 
-  // ---------- Rendering (Dashboard) ----------
+  // ---------- Router ----------
+  function setActiveTab(route) {
+    $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.route === route));
+    $$(".screen").forEach(s => s.classList.toggle("active", s.id === `screen-${route}`));
+
+    const t = I18N[state.lang];
+    if (route === "dash") $("appTitle").textContent = t.appTitleDash;
+    if (route === "new") $("appTitle").textContent = t.appTitleNew;
+    if (route === "stats") $("appTitle").textContent = t.appTitleStats;
+    if (route === "review") $("appTitle").textContent = t.appTitleReview;
+    if (route === "settings") $("appTitle").textContent = t.appTitleSettings;
+
+    if (route === "dash") renderDashboard();
+    if (route === "stats") renderStats();
+    if (route === "review") renderReviewUI();
+  }
+
+  // ---------- Dashboard ----------
   function calcDashboard(trades) {
     const totalPnl = trades.reduce((s, tr) => s + (tr.pnl || 0), 0);
     const closed = trades.filter(tr => typeof tr.r === "number");
@@ -376,9 +373,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ---------- Canvas drawing ----------
+  // ---------- Charts ----------
   function clearCanvas(ctx, w, h) { ctx.clearRect(0, 0, w, h); }
-
   function drawAxes(ctx, w, h) {
     ctx.strokeStyle = "rgba(255,255,255,.10)";
     ctx.lineWidth = 1;
@@ -415,7 +411,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const sx = (x) => points.length === 1 ? padLeft + plotW/2 : padLeft + (x/(points.length-1))*plotW;
     const sy = (y) => (maxY === minY) ? padTop + plotH/2 : padTop + (1 - ((y - minY)/(maxY - minY))) * plotH;
 
-    // baseline 0
     ctx.strokeStyle = "rgba(255,255,255,.10)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -423,7 +418,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.lineTo(w - padRight, sy(0));
     ctx.stroke();
 
-    // line
     ctx.strokeStyle = "rgba(45,212,191,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -434,14 +428,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     ctx.stroke();
 
-    // last point
     const last = points[points.length-1];
     ctx.fillStyle = "rgba(45,212,191,.95)";
     ctx.beginPath();
     ctx.arc(sx(last.x), sy(last.y), 4, 0, Math.PI*2);
     ctx.fill();
 
-    // labels
     ctx.fillStyle = "rgba(255,255,255,.55)";
     ctx.font = "12px -apple-system, system-ui, Arial";
     ctx.fillText(fmtMoney(minY), 6, sy(minY));
@@ -481,22 +473,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const y = padTop + (plotH - bh);
       ctx.fillRect(x, y, barW - 16, bh);
     });
+  }
 
-    const labels = ["<-2R","-2..-1","-1..0","0..1","1..2",">=2R"];
-    ctx.fillStyle = "rgba(255,255,255,.55)";
-    ctx.font = "12px -apple-system, system-ui, Arial";
-    labels.forEach((lab,i)=>{
-      ctx.fillText(lab, padLeft + i*barW + 10, h - 10);
-    });
+  function renderDashboard() {
+    const d = calcDashboard(state.trades);
+    $("totalPnl").textContent = fmtMoney(d.totalPnl);
+    $("winRate").textContent = `${d.winRate.toFixed(0)}%`;
+    $("avgR").textContent = `${d.avgR.toFixed(2)}R`;
+
+    $("eqModeBadge").textContent = state.statsFilter === "MONTH" ? I18N[state.lang].statsMonth : I18N[state.lang].statsAll;
+
+    renderTradesList();
+    drawEquityCurve();
   }
 
   // ---------- New Trade ----------
   function setDefaultDate() { $("fDate").value = new Date().toISOString().slice(0,10); }
-
-  function setDir(dir) {
-    $$("#dirSeg .segBtn").forEach(b => b.classList.toggle("active", b.dataset.dir === dir));
-  }
-
+  function setDir(dir) { $$("#dirSeg .segBtn").forEach(b => b.classList.toggle("active", b.dataset.dir === dir)); }
   function getDir() {
     const b = $$("#dirSeg .segBtn").find(x => x.classList.contains("active"));
     return b ? b.dataset.dir : "LONG";
@@ -549,19 +542,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const exit = toNum($("fExit").value);
     const pnlManual = toNum($("fPnl").value);
 
-    if (entry == null || sl == null || lot == null) {
-      alert(t.needFields);
-      return;
-    }
+    if (entry == null || sl == null || lot == null) { alert(t.needFields); return; }
 
     let pnl = null;
     if (exit != null) pnl = pnlFromExit(entry, exit, lot, dir);
     else if (pnlManual != null) pnl = pnlManual;
-
-    if (pnl == null) {
-      alert(t.needFields);
-      return;
-    }
+    if (pnl == null) { alert(t.needFields); return; }
 
     const risk = riskUsdApprox(entry, sl, lot);
     const r = rMultiple(pnl, risk);
@@ -586,18 +572,20 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     state.trades.push(trade);
-    saveState(state);
 
+    // if no selected trade yet, set latest
+    state.reviewSelectedId = trade.id;
+
+    saveState();
     alert(t.saved);
     resetForm();
-    renderAll();
+    renderDashboard();
     setActiveTab("dash");
   }
 
   // ---------- Stats ----------
   function getFilteredTrades() {
-    if (state.statsFilter === "MONTH") return state.trades.filter(tr => isThisMonth(tr.date));
-    return state.trades.slice();
+    return state.statsFilter === "MONTH" ? state.trades.filter(tr => isThisMonth(tr.date)) : state.trades.slice();
   }
 
   function renderStats() {
@@ -636,77 +624,67 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ---------- Review (FIXED) ----------
-  function clearReviewFormUI() {
-    // Make it "blank default" after save
-    setPlan("YES");
-    $("mistakeType").value = "";
-    $("reviewNotes").value = "";
-  }
-
-  function renderReviewSelect(keepSelectedId = null) {
-    const sel = $("reviewSelect");
-    const current = keepSelectedId || sel.value || "";
-
-    sel.innerHTML = "";
-
-    if (!state.trades.length) {
-      sel.innerHTML = `<option value="">No trades</option>`;
-      return;
-    }
-
-    state.trades.slice().reverse().forEach(tr => {
-      const opt = document.createElement("option");
-      opt.value = tr.id;
-      opt.textContent = `${tr.date} • ${tr.dir} • ${fmtMoney(tr.pnl)} • ${tr.r.toFixed(2)}R`;
-      sel.appendChild(opt);
-    });
-
-    const exists = state.trades.some(t => t.id === current);
-    sel.value = exists ? current : state.trades[state.trades.length - 1].id;
-  }
-
-  function getSelectedTrade() {
-    const id = $("reviewSelect").value;
-    return state.trades.find(t => t.id === id) || null;
-  }
-
+  // ---------- Review (Trade Picker Modal) ----------
   function setPlan(plan) {
     $$("#planSeg .segBtn").forEach(b => b.classList.toggle("active", b.dataset.plan === plan));
   }
-
   function getPlan() {
     const b = $$("#planSeg .segBtn").find(x => x.classList.contains("active"));
     return b ? b.dataset.plan : "YES";
   }
 
-  function renderReview(firstOpen = false) {
+  function clearReviewFormUI() {
+    setPlan("YES");
+    $("mistakeType").value = "";
+    $("reviewNotes").value = "";
+  }
+
+  function getSelectedTrade() {
+    const id = state.reviewSelectedId;
+    return state.trades.find(t => t.id === id) || null;
+  }
+
+  function updateReviewPickButtonText() {
     const t = I18N[state.lang];
-    const sel = $("reviewSelect");
+    const tr = getSelectedTrade();
+    if (!tr) {
+      $("reviewPickBtn").textContent = t.pickerTap;
+      return;
+    }
+    $("reviewPickBtn").textContent = `${tr.date} • ${tr.dir} • ${fmtMoney(tr.pnl)} • ${tr.r.toFixed(2)}R`;
+  }
+
+  function renderReviewUI() {
+    const t = I18N[state.lang];
+    const tr = getSelectedTrade();
 
     if (!state.trades.length) {
-      sel.innerHTML = "";
-      $("reviewMeta").textContent = t.noTradesYet;
+      $("reviewMeta").textContent = t.noTradeSelected;
+      updateReviewPickButtonText();
       clearReviewFormUI();
       return;
     }
 
-    // Keep the current selection (don't override user choice)
-    renderReviewSelect(sel.value);
-
-    // If it's first open and nothing selected yet, pick latest
-    if (firstOpen && !sel.value) {
-      sel.value = state.trades[state.trades.length - 1].id;
+    // default to last trade if none selected
+    if (!state.reviewSelectedId) {
+      state.reviewSelectedId = state.trades[state.trades.length - 1].id;
+      saveState();
     }
 
-    const tr = getSelectedTrade();
-    if (!tr) return;
+    const current = getSelectedTrade();
+    if (!current) {
+      $("reviewMeta").textContent = t.noTradeSelected;
+      updateReviewPickButtonText();
+      clearReviewFormUI();
+      return;
+    }
+
+    updateReviewPickButtonText();
 
     $("reviewMeta").textContent =
-      `XAUUSD • ${tr.dir} • ${tr.date}${tr.session ? " • " + tr.session : ""} • Entry ${tr.entry.toFixed(2)} • SL ${tr.sl.toFixed(2)} • Lot ${tr.lot.toFixed(2)} • ${fmtMoney(tr.pnl)} • ${tr.r.toFixed(2)}R`;
+      `XAUUSD • ${current.dir} • ${current.date}${current.session ? " • " + current.session : ""} • Entry ${current.entry.toFixed(2)} • SL ${current.sl.toFixed(2)} • Lot ${current.lot.toFixed(2)} • ${fmtMoney(current.pnl)} • ${current.r.toFixed(2)}R`;
 
-    // IMPORTANT: show existing review data
-    const rev = tr.review || { plan: "YES", mistake: "", notes: "" };
+    const rev = current.review || { plan: "YES", mistake: "", notes: "" };
     setPlan(rev.plan || "YES");
     $("mistakeType").value = rev.mistake || "";
     $("reviewNotes").value = rev.notes || "";
@@ -723,12 +701,16 @@ document.addEventListener("DOMContentLoaded", () => {
       notes: ($("reviewNotes").value || "").trim()
     };
 
-    saveState(state);
-
-    // After save: clear UI (blank default) but keep selected trade
+    saveState();
     alert(t.saved);
+
+    // After save: clear form UI (blank default)
     clearReviewFormUI();
-    renderAll();
+
+    // Keep meta + button showing selected trade
+    renderReviewUI();
+    renderDashboard();
+    renderStats();
   }
 
   function clearReview() {
@@ -736,14 +718,72 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!tr) return;
 
     tr.review = { plan: "YES", mistake: "", notes: "" };
-    saveState(state);
+    saveState();
 
-    // After clear: clear UI
     clearReviewFormUI();
-    renderAll();
+    renderReviewUI();
+    renderDashboard();
+    renderStats();
   }
 
-  // ---------- Export/Import/Reset ----------
+  // Modal open/close
+  function openTradeModal() {
+    $("tradeModalBack").classList.add("open");
+    $("tradeModal").classList.add("open");
+    $("tradeSearch").value = "";
+    buildTradeModalList("");
+    $("tradeSearch").focus?.();
+  }
+
+  function closeTradeModal() {
+    $("tradeModalBack").classList.remove("open");
+    $("tradeModal").classList.remove("open");
+  }
+
+  function tradeToSearchText(tr) {
+    return `${tr.date} ${tr.dir} ${tr.session || ""} ${tr.pnl} ${tr.r} ${tr.strategy || ""}`.toLowerCase();
+  }
+
+  function buildTradeModalList(query) {
+    const q = (query || "").toLowerCase().trim();
+    const list = $("tradeModalList");
+    list.innerHTML = "";
+
+    const trades = state.trades.slice().reverse().filter(tr => {
+      if (!q) return true;
+      return tradeToSearchText(tr).includes(q);
+    });
+
+    trades.forEach(tr => {
+      const cls = tr.pnl > 0 ? "green" : tr.pnl < 0 ? "red" : "";
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "pickItem";
+      row.innerHTML = `
+        <div class="pickItemMain">
+          <div class="pickItemTop">XAUUSD • ${tr.dir} • ${tr.date}</div>
+          <div class="pickItemSub">Entry ${tr.entry.toFixed(2)} • SL ${tr.sl.toFixed(2)} • Lot ${tr.lot.toFixed(2)} ${tr.session ? "• " + tr.session : ""}</div>
+        </div>
+        <div class="badge ${cls}">${fmtMoney(tr.pnl)} • ${tr.r.toFixed(2)}R</div>
+      `;
+      row.addEventListener("click", () => {
+        state.reviewSelectedId = tr.id;
+        saveState();
+        closeTradeModal();
+        renderReviewUI();
+      });
+      list.appendChild(row);
+    });
+
+    if (!trades.length) {
+      const empty = document.createElement("div");
+      empty.className = "mRow";
+      empty.innerHTML = `<span>—</span><span class="badge">0</span>`;
+      list.appendChild(empty);
+    }
+  }
+
+  // ---------- Settings ----------
   function exportJson() {
     const data = JSON.stringify(state, null, 2);
     const blob = new Blob([data], { type: "application/json" });
@@ -766,9 +806,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const parsed = JSON.parse(reader.result);
         if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.trades)) throw new Error("bad");
         state = { ...defaultState, ...parsed };
-        saveState(state);
+        saveState();
         applyLang();
-        renderAll();
+        renderDashboard();
+        renderStats();
+        renderReviewUI();
         alert(t.importOk);
       } catch {
         alert(t.importBad);
@@ -782,29 +824,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirm(t.confirmReset)) return;
     localStorage.removeItem(STORAGE_KEY);
     state = loadState();
+    saveState();
     applyLang();
     resetForm();
     clearReviewFormUI();
-    renderAll();
-  }
-
-  // ---------- Render all ----------
-  function renderAll() {
-    const dash = calcDashboard(state.trades);
-    $("totalPnl").textContent = fmtMoney(dash.totalPnl);
-    $("winRate").textContent = `${dash.winRate.toFixed(0)}%`;
-    $("avgR").textContent = `${dash.avgR.toFixed(2)}R`;
-
-    $("eqModeBadge").textContent =
-      (state.statsFilter === "MONTH") ? I18N[state.lang].statsMonth : I18N[state.lang].statsAll;
-
-    renderTradesList();
-    drawEquityCurve();
+    renderDashboard();
     renderStats();
-    // NOTE: do NOT force rerender review here to avoid overriding selection
+    renderReviewUI();
   }
 
-  // ---------- Demo trade ----------
+  // ---------- Demo ----------
   function addDemoTrade() {
     const date = new Date().toISOString().slice(0,10);
     const dir = Math.random() > 0.5 ? "LONG" : "SHORT";
@@ -816,7 +845,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const risk = riskUsdApprox(entry, sl, lot);
     const r = rMultiple(pnl, risk);
 
-    state.trades.push({
+    const tr = {
       id: crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2),
       date,
       session: "NY",
@@ -833,23 +862,28 @@ document.addEventListener("DOMContentLoaded", () => {
       strategy: "Demo",
       notes: "Demo trade",
       review: { plan: "YES", mistake: "", notes: "" }
-    });
+    };
 
-    saveState(state);
-    renderAll();
+    state.trades.push(tr);
+    state.reviewSelectedId = tr.id;
+    saveState();
+
+    renderDashboard();
+    renderStats();
   }
 
-  // ---------- Wire events ----------
+  // ---------- Events ----------
   $$(".tab").forEach(btn => btn.addEventListener("click", () => setActiveTab(btn.dataset.route)));
-
   $("goNewBtn").addEventListener("click", () => setActiveTab("new"));
   $("goStatsBtn").addEventListener("click", () => setActiveTab("stats"));
 
   $("langBtn").addEventListener("click", () => {
     state.lang = (state.lang === "EN") ? "HE" : "EN";
-    saveState(state);
+    saveState();
     applyLang();
-    renderAll();
+    renderDashboard();
+    renderStats();
+    renderReviewUI();
   });
 
   // Direction seg
@@ -882,17 +916,23 @@ document.addEventListener("DOMContentLoaded", () => {
       $$("#statsFilterSeg .segBtn").forEach(x => x.classList.remove("active"));
       b.classList.add("active");
       state.statsFilter = b.dataset.filter;
-      saveState(state);
-      renderAll();
+      saveState();
+      renderStats();
+      renderDashboard();
     });
   });
 
-  // Review
-  $("reviewSelect").addEventListener("change", () => renderReview(false));
+  // Review picker modal
+  $("reviewPickBtn").addEventListener("click", openTradeModal);
+  $("tradeModalClose").addEventListener("click", closeTradeModal);
+  $("tradeModalBack").addEventListener("click", closeTradeModal);
+  $("tradeSearch").addEventListener("input", (e) => buildTradeModalList(e.target.value));
+
   $("pickLastBtn").addEventListener("click", () => {
     if (!state.trades.length) return;
-    $("reviewSelect").value = state.trades[state.trades.length - 1].id;
-    renderReview(false);
+    state.reviewSelectedId = state.trades[state.trades.length - 1].id;
+    saveState();
+    renderReviewUI();
   });
 
   $("saveReviewBtn").addEventListener("click", saveReview);
@@ -911,6 +951,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setDefaultDate();
   resetForm();
   applyLang();
-  renderAll();
+  renderDashboard();
+  renderStats();
+  renderReviewUI();
   setActiveTab("dash");
 });
