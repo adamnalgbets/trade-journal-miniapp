@@ -250,7 +250,7 @@
 
         <div class="row">
           <label id="lblPickTrade">Select trade</label>
-          <select id="reviewSelect"></select>
+          <button class="pickerBtn" id="reviewPickBtn" type="button">Tap to choose…</button>
         </div>
 
         <div class="panel soft">
@@ -326,6 +326,19 @@
     <footer class="foot">
       <div class="footText" id="footerText">AdigaFX • v1 • XAUUSD</div>
     </footer>
+  </div>
+
+  <!-- Trade Picker Modal -->
+  <div class="modalBack" id="tradeModalBack"></div>
+  <div class="modal" id="tradeModal">
+    <div class="modalHead">
+      <div class="modalTitle" id="tradeModalTitle">Select trade</div>
+      <button class="btn small ghost" id="tradeModalClose" type="button">Close</button>
+    </div>
+
+    <input class="modalSearch" id="tradeSearch" placeholder="Search: date / LONG / SHORT / pnl…" />
+
+    <div class="modalList" id="tradeModalList"></div>
   </div>
 
   <script src="app.js"></script>
